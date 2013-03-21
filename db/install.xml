@@ -60,13 +60,4 @@
       </INDEXES>
     </TABLE>
   </TABLES>
-  <STATEMENTS>
-    <STATEMENT NAME="insert log_display" TYPE="insert" TABLE="log_display" COMMENT="Initial insert of records on table log_display. Each record describes how data will be showed by log reports.">
-      <SENTENCES>
-        <SENTENCE TEXT="(module, action, mtable, field) VALUES ('qcreate', 'add', 'qcreate', 'name')" />
-        <SENTENCE TEXT="(module, action, mtable, field) VALUES ('qcreate', 'update', 'qcreate', 'name')" />
-        <SENTENCE TEXT="(module, action, mtable, field) VALUES ('qcreate', 'view', 'qcreate', 'name')" />
-      </SENTENCES>
-    </STATEMENT>
-  </STATEMENTS>
 </XMLDB>
