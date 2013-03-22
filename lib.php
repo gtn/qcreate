@@ -24,6 +24,8 @@ define('QCREATE_EDIT_POPUP_OPTIONS', 'scrollbars=yes,resizable=yes,width=800,hei
  */
 define("QCREATE_MAX_EVENT_LENGTH", 5*24*60*60);   // 5 days maximum
 
+require_once(dirname(__FILE__).'/deprecatedlib.php');
+
 /**
  * Given an object containing all the necessary data,
  * (defined by the form in mod.html) this function
@@ -34,19 +36,20 @@ define("QCREATE_MAX_EVENT_LENGTH", 5*24*60*60);   // 5 days maximum
  * @return int The id of the newly inserted qcreate record
  **/
 function qcreate_add_instance($qcreate) {
+	global $DB;
     $qcreate->timecreated = time();
 
     $qcreate->allowed = join(array_keys($qcreate->allowed), ',');
-    if ($qcreate->id =insert_record("qcreate", $qcreate)){
+    if ($qcreate->id = $DB->insert_record("qcreate", $qcreate)){
         $qtypemins = array_filter($qcreate->qtype);
         if (count($qtypemins)){
             foreach ($qtypemins as $key => $qtypemin){
-                $toinsert = new object();
+                $toinsert = new stdClass();
                 $toinsert->no = $qcreate->minimumquestions[$key];
                 $toinsert->qtype = $qtypemin;
                 $toinsert->qcreateid = $qcreate->id;
                 $toinsert->timemodified = time();
-                insert_record('qcreate_required', $toinsert);
+                $DB->insert_record('qcreate_required', $toinsert);
             }
         }
         qcreate_after_add_or_update($qcreate);
@@ -57,6 +60,8 @@ function qcreate_add_instance($qcreate) {
  * Called from cron and update_instance. Not called from add_instance as the contexts are not set up yet.
  */
 function qcreate_student_q_access_sync($qcreate, $cmcontext=null, $course=null, $forcesync= false){
+	global $DB;
+	
     //check if a check is needed
     $timenow = time();
     $activityopen = ($qcreate->timeopen == 0 ||($qcreate->timeopen < $timenow)) &&
@@ -90,7 +95,7 @@ function qcreate_student_q_access_sync($qcreate, $cmcontext=null, $course=null, 
                     unassign_capability($capability, $studentrole->id, $cmcontext->id);
             }
         }
-        set_field('qcreate', 'timesync', $timenow, 'id', $qcreate->id);
+        $DB->set_field('qcreate', 'timesync', $timenow, array('id'=>$qcreate->id));
 
     }
 }
@@ -104,29 +109,29 @@ function qcreate_student_q_access_sync($qcreate, $cmcontext=null, $course=null, 
  * @return boolean Success/Fail
  **/
 function qcreate_update_instance($qcreate) {
-    global $COURSE;
+    global $COURSE, $DB;
 
     $qcreate->timemodified = time();
     $qcreate->id = $qcreate->instance;
 
-    delete_records('qcreate_required', 'qcreateid', $qcreate->id);
+    $DB->delete_records('qcreate_required', array('qcreateid'=>$qcreate->id));
 
     $qtypemins = array_filter($qcreate->qtype);
     if (count($qtypemins)){
         foreach ($qtypemins as $key => $qtypemin){
-            $toinsert = new object();
+            $toinsert = new stdClass();
             $toinsert->no = $qcreate->minimumquestions[$key];
             $toinsert->qtype = $qtypemin;
             $toinsert->qcreateid = $qcreate->id;
             $toinsert->timemodified = time();
-            insert_record('qcreate_required', $toinsert);
+            $DB->insert_record('qcreate_required', $toinsert);
         }
     }
     $qcreate->allowed = join(array_keys($qcreate->allowed), ',');
 
-    $toreturn = update_record("qcreate", $qcreate);
+    $toreturn = $DB->update_record("qcreate", $qcreate);
     
-    $qcreate = get_record('qcreate', 'id', $qcreate->id);
+    $qcreate = $DB->get_record('qcreate', array('id'=>$qcreate->id));
 
     qcreate_student_q_access_sync($qcreate, null, $COURSE, true);
 
@@ -140,12 +145,12 @@ function qcreate_update_instance($qcreate) {
  * @param object $qcreate the qcreate object.
  */
 function qcreate_after_add_or_update($qcreate) {
-    global $COURSE;
+    global $COURSE, $DB;
 
     // Update the events relating to this qcreate.
     // This is slightly inefficient, deleting the old events and creating new ones. However,
     // there are at most two events, and this keeps the code simpler.
-    if ($events = get_records_select('event', "modulename = 'qcreate' and instance = '$qcreate->id'")) {
+    if ($events = $DB->get_records('event', array('modulename' => 'qcreate', 'instance' => $qcreate->id))) {
         foreach($events as $event) {
             delete_event($event->id);
         }
@@ -184,7 +189,7 @@ function qcreate_after_add_or_update($qcreate) {
     }
 
     //update related grade item
-    qcreate_grade_item_update(stripslashes_recursive($qcreate));
+    qcreate_grade_item_update($qcreate);
 
 }
 /**
@@ -404,6 +409,8 @@ function qcreate_process_grades($qcreate, $cm, $users){
     $grading    = false;
     $commenting = false;
     $qids        = array();
+	var_dump($_POST);
+	var_dump($_GET);
     if (isset($_POST['gradecomment'])) {
         $commenting = true;
         //process array of submitted comments
@@ -663,7 +670,7 @@ function qcreate_get_user_grades($qcreate, $userid=0) {
  * @return aggregated grade
  */
 function qcreate_grade_aggregate($gradesforuser, $qcreate){
-    $aggregated = new object();
+    $aggregated = new stdClass();
     $aggregated->rawgrade = 0;
     $aggregated->usermodified = 0;
     $requireds = qcreate_required_qtypes($qcreate);

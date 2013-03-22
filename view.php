@@ -20,23 +20,23 @@
     $confirm  = optional_param('confirm', 0, PARAM_BOOL);  
 
     if ($id) {
-        if (! $cm = get_record("course_modules", "id", $id)) {
+        if (! $cm = $DB->get_record("course_modules", array("id"=>$id))) {
             error("Course Module ID was incorrect");
         }
 
-        if (! $course = get_record("course", "id", $cm->course)) {
+        if (! $course = $DB->get_record("course", array("id"=>$cm->course))) {
             error("Course is misconfigured");
         }
 
-        if (! $qcreate = get_record("qcreate", "id", $cm->instance)) {
+        if (! $qcreate = $DB->get_record("qcreate", array("id"=>$cm->instance))) {
             error("Course module is incorrect");
         }
 
     } else {
-        if (! $qcreate = get_record("qcreate", "id", $a)) {
+        if (! $qcreate = $DB->get_record("qcreate", array("id"=>$a))) {
             error("Course module is incorrect");
         }
-        if (! $course = get_record("course", "id", $qcreate->course)) {
+        if (! $course = $DB->get_record("course", array("id"=>$qcreate->course))) {
             error("Course is misconfigured");
         }
         if (! $cm = get_coursemodule_from_instance("qcreate", $qcreate->id, $course->id)) {
@@ -45,10 +45,10 @@
     }
     $qcreate->cmidnumber = $cm->id;
 
-    $requireds = get_records('qcreate_required', 'qcreateid', $qcreate->id, 'qtype', 'qtype, no, id');
+    $requireds = $DB->get_records('qcreate_required', array('qcreateid'=>$qcreate->id), 'qtype', 'qtype, no, id');
 
-    $thisurl = new moodle_url($CFG->wwwroot.'/mod/qcreate/view.php');
-    $thisurl->params(array('id'=>$cm->id));
+    $thisurl = new moodle_url('/mod/qcreate/view.php', array('id'=>$cm->id));
+	$PAGE->set_url($thisurl);
 
     $modulecontext = get_context_instance(CONTEXT_MODULE, $cm->id);
 
@@ -114,7 +114,7 @@
     call_user_func_array('print_header_simple', $headerargs);
     add_to_log($course->id, "qcreate", "view", "view.php?id=$cm->id", "$qcreate->id");
 
-    print_box(format_text($qcreate->intro, $qcreate->introformat), 'generalbox', 'intro');
+    $OUTPUT->box(format_text($qcreate->intro, $qcreate->introformat), 'generalbox', 'intro');
 
     echo '<div class="mdl-align">';
     echo '<p>'.qcreate_time_status($qcreate).'</p>';

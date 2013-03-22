@@ -18,6 +18,5 @@
 // using the functions defined in lib/ddllib.php
 
 function xmldb_qcreate_upgrade($oldversion=0) {
+	return true;
 }
-
-?>

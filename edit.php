@@ -14,7 +14,7 @@ require_once($CFG->dirroot.'/mod/qcreate/lib.php');
 require_once($CFG->dirroot . '/question/editlib.php');
 
 
-list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('questions', true);
+list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('questions', '/mod/qcreate/edit.php');
 $qcreate->cmidnumber = $cm->id;
 require_capability('mod/qcreate:grade', get_context_instance(CONTEXT_MODULE, $cm->id));
 if ($qcreate->graderatio == 100){
@@ -55,6 +55,7 @@ $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 if (!$users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', $currentgroup, '', false)){
     $users = array();
 }
+
 $users = array_keys($users);
 if (!empty($CFG->enablegroupings) && !empty($cm->groupingid)) {
     $groupingusers = groups_get_grouping_members($cm->groupingid, 'u.id', 'u.id');
@@ -183,28 +184,30 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
         $sort = ' ORDER BY '.$sort;
     }
 
-    if ($where = $table->get_sql_where()) {
-        $where .= ' AND ';
-    }
+    $where = $table->get_sql_where();
+	if ($where[0]) {
+        $where[0] .= ' AND ';
+	}
+	
     //unfortunately we cannot use status in WHERE clause
     switch ($showungraded . $showneedsregrade . $showgraded){
         case '001':
-            $where .= '(g.timemarked IS NOT NULL) AND (g.timemarked >= q.timemodified ) AND ';
+            $where[0] .= '(g.timemarked IS NOT NULL) AND (g.timemarked >= q.timemodified ) AND ';
             break;
         case '010':
-            $where .= '(g.timemarked IS NOT NULL) AND (g.timemarked < q.timemodified ) AND ';
+            $where[0] .= '(g.timemarked IS NOT NULL) AND (g.timemarked < q.timemodified ) AND ';
             break;
         case '011':
-            $where .= '(g.timemarked IS NOT NULL) AND ';
+            $where[0] .= '(g.timemarked IS NOT NULL) AND ';
             break;
         case '100':
-            $where .= '(g.timemarked IS NULL) AND ';
+            $where[0] .= '(g.timemarked IS NULL) AND ';
             break;
         case '101':
-            $where .= '((g.timemarked IS NULL) OR g.timemarked >= q.timemodified) AND ';
+            $where[0] .= '((g.timemarked IS NULL) OR g.timemarked >= q.timemodified) AND ';
             break;
         case '110':
-            $where .= '((g.timemarked IS NULL) OR g.timemarked < q.timemodified) AND ';
+            $where[0] .= '((g.timemarked IS NULL) OR g.timemarked < q.timemodified) AND ';
             break;
         case '111': //show everything
             break;
@@ -212,14 +215,14 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
     if ($qcreate->allowed != 'ALL') {
         $allowedparts = explode(',', $qcreate->allowed);
         $allowedlist = "'".join("','", $allowedparts)."'";
-        $where .= 'q.qtype IN ('.$allowedlist.') AND ';
+        $where[0] .= 'q.qtype IN ('.$allowedlist.') AND ';
     }
 
     $countsql = 'SELECT COUNT(*) FROM '.$CFG->prefix.'user u, '.$CFG->prefix.'question_categories c, '.$CFG->prefix.'question q '.
            'LEFT JOIN '.$CFG->prefix.'qcreate_grades g ON q.id = g.questionid '.
-           'WHERE '.$where.'q.createdby = u.id AND u.id IN ('.implode(',',$users).
+           'WHERE '.$where[0].'q.createdby = u.id AND u.id IN ('.implode(',',$users).
             ') AND q.hidden=\'0\' AND q.parent=\'0\' AND q.category = c.id and c.contextid='.$context->id;
-    $answercount = count_records_sql($countsql);
+    $answercount = $DB->count_records_sql($countsql, $where[1]);
 
     //complicated status calculation is needed for sorting on status column
     $select = 'SELECT q.id AS qid, u.id, u.firstname, u.lastname, u.picture,
@@ -233,15 +236,15 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
     $sql = 'FROM '.$CFG->prefix.'user u, '.$CFG->prefix.'question_categories c,  '.$CFG->prefix.'question q '.
            'LEFT JOIN '.$CFG->prefix.'qcreate_grades g ON q.id = g.questionid
                                                               AND g.qcreateid = '.$qcreate->id.' '.
-           'WHERE '.$where.'q.createdby = u.id AND u.id IN ('.implode(',',$users).
+           'WHERE '.$where[0].'q.createdby = u.id AND u.id IN ('.implode(',',$users).
             ') AND q.hidden=\'0\' AND q.parent=\'0\' AND q.category = c.id and c.contextid='.$context->id;
 } else {
     $answercount = 0;
 }
 if ($grading_interface){ 
-    echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post">';
+    echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post" style="background: green;">';
     echo '<div>';
-    echo $thispageurl->hidden_params_out(array('showgraded', 'showneedsregrade', 'showungraded'));
+    // TODO: echo $thispageurl->hidden_params_out(array('showgraded', 'showneedsregrade', 'showungraded'));
     //default value for checkbox when checkbox not checked.
     echo '<input type="hidden" name="showgraded" value="0" />';
     echo '<input type="hidden" name="showneedsregrade" value="0" />';
@@ -265,7 +268,8 @@ if ($grading_interface){
 }
 $table->pagesize($perpage, $answercount);
 
-if ($answercount && false !== ($answers = get_records_sql($select.$sql.$sort, $table->get_page_start(), $table->get_page_size()))) {
+$printTable = false;
+if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sort, $where[1], $table->get_page_start(), $table->get_page_size()))) {
     $strupdate = get_string('update');
     $strgrade  = get_string('grade');
     $grademenu = make_grades_menu($qcreate->grade);
@@ -273,11 +277,11 @@ if ($answercount && false !== ($answers = get_records_sql($select.$sql.$sort, $t
     
     $qtypemenu = question_type_menu();
     
-    foreach ($answers as $answer) {
+	foreach ($answers as $answer) {
         $final_grade = $grading_info->items[0]->grades[$answer->id];
     /// Calculate user status
         $answer->needsregrading = ($answer->timemarked <= $answer->timemodified);
-        $picture = print_user_picture($answer->id, $COURSE->id, $answer->picture, false, true);
+        $picture =  null; // TODO: print_user_picture($answer->id, $COURSE->id, $answer->picture, false, true);
 
         if (empty($answer->gradeid)) {
             $answer->grade = -1; //no grade yet
@@ -290,25 +294,25 @@ if ($answercount && false !== ($answers = get_records_sql($select.$sql.$sort, $t
         $colquestion = $answer->qname;
         //preview?
         $strpreview = get_string("preview","quiz");
+
         if (question_has_capability_on($answer->qid, 'use')){
-            $colquestion .= link_to_popup_window('/question/preview.php?id=' . $answer->qid . '&amp;courseid=' .$COURSE->id, 'questionpreview',
-                        "<img src=\"$CFG->pixpath/t/preview.gif\" class=\"iconsmall\" alt=\"$strpreview\" />",
-                        0, 0, $strpreview, QUESTION_PREVIEW_POPUP_OPTIONS, true);
+
+			$link = new moodle_url('/question/preview.php?id=' . $answer->qid . '&amp;courseid=' .$COURSE->id);
+			$colquestion .= $OUTPUT->action_link($link, "<img src=\"".$OUTPUT->pix_url('t/preview')."\" class=\"iconsmall\" alt=\"$strpreview\" />", new popup_action ('click', $link));
         }
+
         // edit, hide, delete question, using question capabilities, not quiz capabilieies
         if (question_has_capability_on($answer->qid, 'edit') || question_has_capability_on($answer->qid, 'move')) {
             $stredit = get_string("edit");
-            $colquestion .= link_to_popup_window('/question/question.php?id=' . $answer->qid . '&amp;cmid=' .$cm->id
-                                        . '&amp;inpopup=1', 'questionedit',
-                        "<img src=\"$CFG->pixpath/t/edit.gif\" class=\"iconsmall\" alt=\"$stredit\" />",
-                        0, 0, $stredit, QCREATE_EDIT_POPUP_OPTIONS, true);
+
+			$link = new moodle_url('/question/question.php?id=' . $answer->qid . '&amp;cmid=' .$cm->id. '&amp;inpopup=1');
+			$colquestion .= $OUTPUT->action_link($link, "<img src=\"".$OUTPUT->pix_url('t/edit')."\" class=\"iconsmall\" alt=\"$stredit\" />", new popup_action ('click', $link));
         } elseif (question_has_capability_on($answer->qid, 'view')){
             $strview = get_string("view");
-            $colquestion .= link_to_popup_window('/question/question.php?id=' . $answer->qid . '&amp;cmid=' .$cm->id
-                                        . '&amp;inpopup=1', 'questionedit',
-                        "<img src=\"$CFG->pixpath/t/info.gif\" class=\"iconsmall\" alt=\"$strview\" />",
-                        0, 0, $strview, QCREATE_EDIT_POPUP_OPTIONS, true);
+			$link = new moodle_url('/question/question.php?id=' . $answer->qid . '&amp;cmid=' .$cm->id. '&amp;inpopup=1');
+			$colquestion .= $OUTPUT->action_link($link, "<img src=\"".$OUTPUT->pix_url('t/info')."\" class=\"iconsmall\" alt=\"$strview\" />", new popup_action ('click', $link));
         }
+
         if ($highlight){
             $colquestion = '<span class="highlight">'.$colquestion.'</span>';
         }
@@ -420,20 +424,22 @@ if ($answercount && false !== ($answers = get_records_sql($select.$sql.$sort, $t
         }
 
         $table->add_data($row);
+		$printTable = true;
     }
 }
-if (!empty($table->data)){
-    echo '<form action="'.$thispageurl->out(true).'" id="fastg" method="post">';
-    echo '<div>';
+
+if ($printTable){
+    echo '<form action="'.$thispageurl->out(true).'" id="fastg" method="post" style="background: red;">';
+    echo '<div>asdf';
     echo '<input type="hidden" name="gradessubmitted" value="1" />';
-	echo $thispageurl->hidden_params_out();
+	// TODO: echo $thispageurl->hidden_params_out();
     echo '</div>';
 }
 
 
 $table->print_html();  /// Print the whole table
 
-if (!empty($table->data)){
+if ($printTable){
     if ($grading_interface){
         echo '<div style="text-align:center"><input type="submit" name="fastg" value="'.get_string('saveallfeedbackandgrades', 'qcreate').'" /></div>';
     } else {
@@ -448,7 +454,7 @@ echo "\n<br />";
 
 $form = '<form id="options" action="'.$thispageurl->out(true).'" method="post">';
 $form .=  '<fieldset class="invisiblefieldset">';
-$form .= $thispageurl->hidden_params_out();
+// TODO: $form .= $thispageurl->hidden_params_out();
 $form .= '<input type="hidden" id="updatepref" name="updatepref" value="1" />';
 $form .= '<p>';
 $form .= '<label for="id_perpage">'.get_string('pagesize','qcreate').'</label>';
@@ -457,7 +463,7 @@ $form .= '<input type="submit" value="'.get_string('savepreferences').'" />';
 $form .= '</p>';
 $form .= '</fieldset>';
 $form .= '</form>';
-print_box($form, 'generalbox boxaligncenter boxwidthnarrow');
+$OUTPUT->box($form, 'generalbox boxaligncenter boxwidthnarrow');
 ///End of mini form
-print_footer($COURSE);
-?>
+
+$OUTPUT->footer();

@@ -1,42 +1,24 @@
-<?php //$Id
+<?php
 
-/**
- * This file defines de main qcreate configuration form
- * It uses the standard core Moodle (>1.8) formslib. For
- * more info about them, please visit:
- *
- * http://docs.moodle.org/en/Development:lib/formslib.php
- *
- * The form must provide support for, at least these fields:
- *   - name: text element of 64cc max
- *
- * Also, it's usual to use these fields:
- *   - intro: one htmlarea element to describe the activity
- *            (will be showed in the list of activities of
- *             qcreate type (index.php) and in the header
- *             of the qcreate main page (view.php).
- *   - introformat: The format used to write the contents
- *             of the intro field. It automatically defaults
- *             to HTML when the htmleditor is used and can be
- *             manually selected if the htmleditor is not used
- *             (standard formats are: MOODLE, HTML, PLAIN, MARKDOWN)
- *             See lib/weblib.php Constants and the format_text()
- *             function for more info
- */
+if (!defined('MOODLE_INTERNAL')) {
+    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+}
 
-require_once ('moodleform_mod.php');
+require_once ($CFG->dirroot.'/mod/qcreate/locallib.php');
+require_once ($CFG->dirroot.'/course/moodleform_mod.php');
 require_once ($CFG->libdir.'/questionlib.php');
 
 
 class mod_qcreate_mod_form extends moodleform_mod {
-    var $requireds;
+    
+	private $_requireds;
 
-    function definition() {
+    protected function definition() {
 
-        global $COURSE;
+        global $COURSE, $DB;
         $mform    =& $this->_form;
 
-        $this->requireds = get_records('qcreate_required', 'qcreateid', $this->_instance, 'qtype', 'qtype, no, id');
+        $this->_requireds = $DB->get_records('qcreate_required', array('qcreateid'=>$this->_instance), 'qtype', 'qtype, no, id');
 
 
 //-------------------------------------------------------------------------------
@@ -47,20 +29,18 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
     /// Adding the optional "intro" and "introformat" pair of fields
-        $mform->addElement('htmleditor', 'intro', get_string('intro', 'qcreate'));
-        $mform->setType('intro', PARAM_RAW);
-        $mform->addRule('intro', get_string('required'), 'required', null, 'client');
-        $mform->setHelpButton('intro', array('writing', 'richtext'), false, 'editorhelpbutton');
+        $this->add_intro_editor(false, get_string('intro', 'qcreate'));
+        // TODO: $mform->setHelpButton('intro', array('writing', 'richtext'), false, 'editorhelpbutton');
 
-        $mform->addElement('format', 'introformat', get_string('format'));
+        // TODO: $mform->addElement('format', 'introformat', get_string('format'));
 
 //-------------------------------------------------------------------------------
         $mform->addElement('header', 'timinghdr', get_string('timing', 'form'));
         $mform->addElement('date_time_selector', 'timeopen', get_string('open', 'qcreate'), array('optional'=>true));
-        $mform->setHelpButton('timeopen', array('timeopen', get_string('open', 'qcreate'), 'qcreate'));
+        // TODO: $mform->setHelpButton('timeopen', array('timeopen', get_string('open', 'qcreate'), 'qcreate'));
 
         $mform->addElement('date_time_selector', 'timeclose', get_string('close', 'qcreate'), array('optional'=>true));
-        $mform->setHelpButton('timeclose', array('timeopen', get_string('close', 'qcreate'), 'qcreate'));
+        // TODO: $mform->setHelpButton('timeclose', array('timeopen', get_string('close', 'qcreate'), 'qcreate'));
 
 //-------------------------------------------------------------------------------
         $mform->addElement('header', 'gradeshdr', get_string('grading', 'qcreate'));
@@ -71,7 +51,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         }
         $mform->addElement('select', 'grade', get_string('grade'), $gradeoptions);
         $mform->setDefault('grade', 100);
-        $mform->setHelpButton('grade', array('grade', get_string('grade'), 'qcreate'));
+        // TODO: $mform->setHelpButton('grade', array('grade', get_string('grade'), 'qcreate'));
 
         $graderatiooptions = array();
         foreach (array(100, 90, 80, 67, 60, 50, 40, 33, 30, 20, 10, 0)
@@ -83,7 +63,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         }
         $mform->addElement('select', 'graderatio', get_string('graderatio', 'qcreate'), $graderatiooptions);
         $mform->setDefault('graderatio', 50);
-        $mform->setHelpButton('graderatio', array('automaticmanualgrading', get_string('graderatio', 'qcreate'), 'qcreate'));
+        // TODO: $mform->setHelpButton('graderatio', array('automaticmanualgrading', get_string('graderatio', 'qcreate'), 'qcreate'));
 
         $allowedgroup = array();
         $allowedgroup[] =& $mform->createElement('checkbox', "ALL", '', get_string('allowall', 'qcreate'));
@@ -94,13 +74,13 @@ class mod_qcreate_mod_form extends moodleform_mod {
         }
         $mform->addGroup($allowedgroup, 'allowed', get_string('allowedqtypes', 'qcreate'));
         $mform->disabledIf('allowed', "allowed[ALL]", 'checked');
-        $mform->setHelpButton('allowed', array('gradedquestiontypes', get_string('allowedqtypes', 'qcreate'), 'qcreate'));
+        // TODO: $mform->setHelpButton('allowed', array('gradedquestiontypes', get_string('allowedqtypes', 'qcreate'), 'qcreate'));
 
         for ($i= 1; $i<=20; $i++){
             $noofquestionsmenu[$i] = $i;
         }
         $mform->addElement('select', 'totalrequired', get_string('noofquestionstotal', 'qcreate'), $noofquestionsmenu);
-        $mform->setHelpButton('totalrequired', array('totalquestionsgraded', get_string('noofquestionstotal', 'qcreate'), 'qcreate'));
+        // TODO: $mform->setHelpButton('totalrequired', array('totalquestionsgraded', get_string('noofquestionstotal', 'qcreate'), 'qcreate'));
 
 
 //-------------------------------------------------------------------------------
@@ -109,13 +89,13 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $qtypeselect = array(''=>get_string('selectone', 'qcreate')) + $qtypemenu;
         $repeatarray[] =& $mform->createElement('select', 'qtype', get_string('qtype', 'qcreate'), $qtypeselect);
         $repeatarray[] =& $mform->createElement('select', 'minimumquestions', get_string('minimumquestions', 'qcreate'), $noofquestionsmenu);
-        $requiredscount = count($this->requireds);
-        $repeats = $this->requireds ? $requiredscount+2 : 4;
+        $requiredscount = count($this->_requireds);
+        $repeats = $this->_requireds ? $requiredscount+2 : 4;
         $repeats = $this->repeat_elements($repeatarray, $repeats, array(), 'minrepeats', 'addminrepeats', 2);
 
         for ($i=0; $i<$repeats; $i++) {
-            $mform->setHelpButton("qtype[$i]", array('questiontype', get_string('qtype', 'qcreate'), 'qcreate'));
-            $mform->setHelpButton("minimumquestions[$i]", array('minimumquestions', get_string('minimumquestions', 'qcreate'), 'qcreate'));
+            // TODO: $mform->setHelpButton("qtype[$i]", array('questiontype', get_string('qtype', 'qcreate'), 'qcreate'));
+            // TODO: $mform->setHelpButton("minimumquestions[$i]", array('minimumquestions', get_string('minimumquestions', 'qcreate'), 'qcreate'));
             $mform->disabledIf("minimumquestions[$i]", "qtype[$i]", 'eq', '');
         }
 //-------------------------------------------------------------------------------
@@ -126,7 +106,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
                                 2=>get_string('studentaccesssaveasnew', 'qcreate'),
                                 3=>get_string('studentaccessedit', 'qcreate'));
         $mform->addElement('select', 'studentqaccess', get_string('studentqaccess', 'qcreate'), $studentqaccessmenu);
-        $mform->setHelpButton('studentqaccess', array('studentquestionaccess', get_string('studentqaccess', 'qcreate'), 'qcreate'));
+        // TODO: $mform->setHelpButton('studentqaccess', array('studentquestionaccess', get_string('studentqaccess', 'qcreate'), 'qcreate'));
 
 //-------------------------------------------------------------------------------
         // add standard elements, common to all modules
@@ -139,8 +119,8 @@ class mod_qcreate_mod_form extends moodleform_mod {
 
     function data_preprocessing(&$default_values){
         $i = 0;
-        if ($this->requireds){
-            foreach ($this->requireds as $qtype => $required){
+        if ($this->_requireds){
+            foreach ($this->_requireds as $qtype => $required){
                 $default_values["minimumquestions[$i]"] = $required->no;
                 $default_values["qtype[$i]"] = $qtype;
                 $i++;
@@ -157,7 +137,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
 
     }
 
-    function validation($data){
+    public function validation($data, $files){
         $errors = array();
         if (!isset($data['allowed'])){
             $errors['allowed']=get_string('needtoallowatleastoneqtype', 'qcreate');
@@ -194,5 +174,3 @@ class mod_qcreate_mod_form extends moodleform_mod {
         return $errors;
     }
 }
-
-?>

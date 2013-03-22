@@ -1,15 +1,10 @@
-<?php // $Id: version.php,v 1.3 2007/11/21 09:19:34 jamiesensei Exp $
+<?php
 
-/**
- * Code fragment to define the version of qcreate
- * This fragment is called by moodle_needs_upgrading() and /admin/index.php
- *
- * @author
- * @version $Id: version.php,v 1.3 2007/11/21 09:19:34 jamiesensei Exp $
- * @package qcreate
- **/
+defined('MOODLE_INTERNAL') || die();
 
-$module->version  = 2007092600;  // The current module version (Date: YYYYMMDDXX)
-$module->cron     = 300;           // Period for cron to check this module (secs)
-
-?>
+$module->version = 2013032101;
+$module->maturity  = MATURITY_BETA;
+$module->release  = "1.0";
+$module->requires = 2011033005.06;
+$module->cron      = 300;
+$module->component = 'mod_qcreate';

@@ -51,7 +51,7 @@ function qcreate_question_action_icons($cmid, $question, $returnurl){
 }
 
 function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $modulecontext){
-    global $CFG, $USER, $COURSE;
+    global $CFG, $DB, $USER, $COURSE;
 
     $qtypemenu = question_type_menu();
 
@@ -62,7 +62,7 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
     }
 
     $questionurl = new moodle_url($CFG->wwwroot.'/question/question.php');
-    $questionurl->params(array('cmid'=>$cm->id, 'returnurl'=>$thisurl->out()));
+    $questionurl->params(array('cmid'=>$cm->id, 'returnurl'=>$thisurl->out_as_local_url()));
 
 
     $questionsql = "SELECT q.*, c.id as cid, c.name as cname, g.grade, g.gradecomment, g.id as gid
@@ -78,7 +78,7 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
         $questionsql .= " AND q.qtype IN ($allowedlist)";
     }
 
-    $questions = get_records_sql($questionsql);
+    $questions = $DB->get_records_sql($questionsql);
     $activityopen = qcreate_activity_open($qcreate);
 
     print_heading(get_string('requiredquestions', 'qcreate'), 'center');
@@ -330,7 +330,7 @@ function question_item_html($question, $questionurl, $thisurl, $qcreate, $cm, $s
         $questionlistitem .= "</em>";
     }
     if ($activityopen){
-        $questionlistitem .= qcreate_question_action_icons($cm->id, $question, $thisurl->out_action());
+        $questionlistitem .= qcreate_question_action_icons($cm->id, $question, $thisurl->out_as_local_url());
     }
 
     return $questionlistitem;
