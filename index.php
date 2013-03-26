@@ -14,7 +14,7 @@
 
     $id = required_param('id', PARAM_INT);   // course
 
-    if (! $course = get_record("course", "id", $id)) {
+    if (! $course = $DB->get_record("course", array("id"=>$id))) {
         error("Course ID is incorrect");
     }
 
@@ -51,6 +51,8 @@
     $strweek  = get_string("week");
     $strtopic  = get_string("topic");
 
+	$table = new html_table();
+	
     if ($course->format == "weeks") {
         $table->head  = array ($strweek, $strname);
         $table->align = array ("center", "left");
@@ -80,10 +82,8 @@
 
     echo "<br />";
 
-    print_table($table);
+    echo html_writer::table($table);
 
 /// Finish the page
 
-    print_footer($course);
-
-?>
+    echo $OUTPUT->footer();

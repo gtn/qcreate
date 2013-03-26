@@ -101,7 +101,6 @@ print_header_simple(format_string($qcreate->name,true), "", $navigation,
         '', '', true, update_module_button($cm->id, $COURSE->id, $strqcreate), navmenu($COURSE, $cm));
 
 $mode = 'editq';
-
 include('tabs.php');
 
 //setting this after tabs.php as these params are just for this page and should not be included in urls for tabs.
@@ -241,8 +240,9 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
 } else {
     $answercount = 0;
 }
+
 if ($grading_interface){ 
-    echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post" style="background: green;">';
+    echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post">';
     echo '<div>';
     // TODO: echo $thispageurl->hidden_params_out(array('showgraded', 'showneedsregrade', 'showungraded'));
     //default value for checkbox when checkbox not checked.
@@ -268,7 +268,9 @@ if ($grading_interface){
 }
 $table->pagesize($perpage, $answercount);
 
-$printTable = false;
+$tableHasData = false;
+
+ob_start();
 if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sort, $where[1], $table->get_page_start(), $table->get_page_size()))) {
     $strupdate = get_string('update');
     $strgrade  = get_string('grade');
@@ -414,6 +416,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
                 $outcomes .= '</div>';
             }
         }
+
         if ($grading_interface){ 
             $row = array($picture, fullname($answer), $colquestion, $grade, $status, $comment, $studentmodified, $teachermodified, $finalgrade);
         } else {
@@ -424,22 +427,24 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
         }
 
         $table->add_data($row);
-		$printTable = true;
+		$tableHasData = true;
     }
 }
 
-if ($printTable){
-    echo '<form action="'.$thispageurl->out(true).'" id="fastg" method="post" style="background: red;">';
-    echo '<div>asdf';
+$table->print_html();  /// Print the whole table
+$tableOutput = ob_get_clean();
+
+if ($tableHasData) {
+    echo '<form action="'.$thispageurl->out(true).'" method="post">';
+    echo '<div>';
     echo '<input type="hidden" name="gradessubmitted" value="1" />';
 	// TODO: echo $thispageurl->hidden_params_out();
     echo '</div>';
 }
 
+echo $tableOutput;
 
-$table->print_html();  /// Print the whole table
-
-if ($printTable){
+if ($tableHasData) {
     if ($grading_interface){
         echo '<div style="text-align:center"><input type="submit" name="fastg" value="'.get_string('saveallfeedbackandgrades', 'qcreate').'" /></div>';
     } else {
@@ -466,4 +471,4 @@ $form .= '</form>';
 $OUTPUT->box($form, 'generalbox boxaligncenter boxwidthnarrow');
 ///End of mini form
 
-$OUTPUT->footer();
+echo $OUTPUT->footer();

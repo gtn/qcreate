@@ -404,33 +404,32 @@ function qcreate_grade_item_update($qcreate) {
  * @param array users array of ids of users who can take part in this activity.
  */
 function qcreate_process_grades($qcreate, $cm, $users){
-    global $USER;
+    global $USER, $DB;
     ///do the fast grading stuff
     $grading    = false;
     $commenting = false;
     $qids        = array();
-	var_dump($_POST);
-	var_dump($_GET);
+
     if (isset($_POST['gradecomment'])) {
         $commenting = true;
         //process array of submitted comments
-        $submitcomments = optional_param('gradecomment', 0, PARAM_RAW);
+        $submitcomments = optional_param_array('gradecomment', 0, PARAM_RAW);
         $qids = array_keys($_POST['gradecomment']);
     }
     if (isset($_POST['menu'])) {
         $grading = true;
         //process array of submitted grades
-        $submittedgrades = optional_param('menu', 0, PARAM_INT);
+        $submittedgrades = optional_param_array('menu', 0, PARAM_INT);
         $qids = array_unique(array_merge($qids, array_keys($_POST['menu'])));
     }
     if (!$qids) {
         return;
     }
     //get the cleaned keys which are the questions ids
-    $qids = clean_param($qids, PARAM_INT);
+	$qids = clean_param_array($qids, PARAM_INT);
     if ($qids){
         $toupdates = array();
-        $questions = get_records_select('question', 'id IN ('.implode(',', $qids).') AND '.
+        $questions = $DB->get_records_select('question', 'id IN ('.implode(',', $qids).') AND '.
                                         'createdby IN ('.implode(',', $users).')');
         foreach ($qids as $qid){
             //test that qid is a question created by one of the users we can grade
@@ -468,7 +467,7 @@ function qcreate_process_grades($qcreate, $cm, $users){
 }
 
 function qcreate_process_local_grade($qcreate, $question, $forcenewgrade = false, $submittedgrade=-1, $submittedcomment=''){
-    global $USER;
+    global $USER, $DB;
     if ($forcenewgrade || !$grade = qcreate_get_grade($qcreate, $question->id)) {
         $grade = qcreate_prepare_new_grade($qcreate, $question);
         $newgrade = true;
@@ -501,12 +500,12 @@ function qcreate_process_local_grade($qcreate, $question, $forcenewgrade = false
 
     if ($forcenewgrade || $updatedb){
         if ($newgrade) {
-            if (!$sid = insert_record('qcreate_grades', $grade)) {
+            if (!$sid = $DB->insert_record('qcreate_grades', $grade)) {
                 return false;
             }
             $grade->id = $sid;
         } else {
-            if (!update_record('qcreate_grades', $grade)) {
+            if (!$DB->update_record('qcreate_grades', $grade)) {
                 return false;
             }
         }
@@ -559,7 +558,9 @@ function qcreate_process_outcomes($qcreate, $userid) {
  * @return object The grade
  */
 function qcreate_get_grade($qcreate, $qid, $createnew=false) {
-    $grade = get_record('qcreate_grades', 'qcreateid', $qcreate->id, 'questionid', $qid);
+	global $DB;
+	
+    $grade = $DB->get_record('qcreate_grades', array('qcreateid'=>$qcreate->id, 'questionid'=>$qid));
 
     if ($grade || !$createnew) {
         return $grade;
@@ -634,7 +635,7 @@ function qcreate_update_grades($qcreate=null, $userid=0) {
  * @return array array of grades, false if none
  */
 function qcreate_get_user_grades($qcreate, $userid=0) {
-    global $CFG;
+    global $CFG, $DB;
     if (is_array($userid)){
        $user =  "u.id IN (".implode(',', $userid).") AND";
     } else if ($userid){
@@ -648,7 +649,7 @@ function qcreate_get_user_grades($qcreate, $userid=0) {
               LEFT JOIN {$CFG->prefix}qcreate_grades g ON g.questionid = q.id
              WHERE $user u.id = q.createdby AND qc.id = q. category AND qc.contextid={$modulecontext->id}
              ORDER BY rawgrade DESC";
-    $localgrades = get_records_sql($sql);
+    $localgrades = $DB->get_records_sql($sql);
     $gradesbyuserids = array();
     foreach($localgrades as $k=>$v) {
         if (!isset($gradesbyuserids[$v->userid])){
@@ -728,9 +729,11 @@ function qcreate_grade_aggregate($gradesforuser, $qcreate){
  * @return array an array of objects
  */
 function qcreate_required_qtypes($qcreate){
+	global $DB;
+	
     static $requiredcache = array();
     if (!isset($requiredcache[$qcreate->id])){
-        $requiredcache[$qcreate->id] = get_records('qcreate_required', 'qcreateid', $qcreate->id, 'qtype', 'qtype, no, id');
+        $requiredcache[$qcreate->id] = $DB->get_records('qcreate_required', array('qcreateid'=>$qcreate->id), 'qtype', 'qtype, no, id');
     }
     return $requiredcache[$qcreate->id];
 }

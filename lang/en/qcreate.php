@@ -1,4 +1,5 @@
 <?php
+$string['pluginadministration'] = 'Question creation Administration';
 $string['activityclosed'] = 'Activity is closed.';
 $string['activitygrade'] = 'You have been awarded a total grade of $a->grade / $a->outof for this activity.';
 $string['activityname'] = 'Activity name';
