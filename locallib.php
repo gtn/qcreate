@@ -12,7 +12,7 @@ require_once($CFG->libdir.'/gradelib.php');
  * question - preview and edit / view icons depending on user capabilities.
  */
 function qcreate_question_action_icons($cmid, $question, $returnurl){
-    global $CFG, $COURSE;
+    global $CFG, $COURSE, $OUTPUT;
     static $stredit = null;
     static $strview = null;
     static $strpreview = null;
@@ -26,32 +26,32 @@ function qcreate_question_action_icons($cmid, $question, $returnurl){
     $html =''; 
     if (($question->qtype != 'random')){
         if (question_has_capability_on($question, 'use', $question->cid)){ 
-            $html .= link_to_popup_window('/question/preview.php?id=' . $question->id . '&amp;courseid=' .$COURSE->id, 'questionpreview',
-                "<img src=\"$CFG->pixpath/t/preview.gif\" class=\"iconsmall\" alt=\"$strpreview\" />",
-                0, 0, $strpreview, QUESTION_PREVIEW_POPUP_OPTIONS, true);
-        }
+			$url = '/question/preview.php?id=' . $question->id . '&amp;courseid=' .$COURSE->id;
+			$action = new popup_action('click', $url, 'questionpreview', question_preview_popup_params());
+			$html .= $OUTPUT->action_link($url, "<img src=\"".$OUTPUT->pix_url('t/preview')."\" class=\"iconsmall\" alt=\"$strpreview\" />", $action, array('title' => $strpreview));
+		}
     }
-    $questionparams = array('returnurl' => $returnurl, 'cmid'=>$cmid, 'id' => $question->id);
+    $questionparams = array('returnurl' => $returnurl->out_as_local_url(), 'cmid'=>$cmid, 'id' => $question->id);
     $questionurl = new moodle_url("$CFG->wwwroot/question/question.php", $questionparams);
     if (question_has_capability_on($question, 'edit', $question->cid) || 
                 question_has_capability_on($question, 'move', $question->cid)) {
         $html .= "<a title=\"$stredit\" href=\"".$questionurl->out()."\">" .
-                "<img src=\"$CFG->pixpath/t/edit.gif\" class=\"iconsmall\" alt=\"$stredit\" />" .
+                "<img src=\"".$OUTPUT->pix_url('t/edit')."\" class=\"iconsmall\" alt=\"$stredit\" />" .
                 "</a>";
     } elseif (question_has_capability_on($question, 'view', $question->cid)){
         $html .= "<a title=\"$strview\" href=\"".$questionurl->out(false, array('id'=>$question->id))."\">" .
-                "<img src=\"$CFG->pixpath/i/info.gif\" alt=\"$strview\" />" .
+                "<img src=\"".$OUTPUT->pix_url('i/info')."\" alt=\"$strview\" />" .
                 "</a>";
     }
     if (question_has_capability_on($question, 'edit', $question->cid)) {
         $html .= "<a title=\"$strdelete\" href=\"".$returnurl."&amp;delete=$question->id\">" .
-                "<img src=\"$CFG->pixpath/t/delete.gif\" alt=\"$strdelete\" /></a>";
+                "<img src=\"".$OUTPUT->pix_url('t/delete')."\" alt=\"$strdelete\" /></a>";
     }
     return $html;
 }
 
 function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $modulecontext){
-    global $CFG, $DB, $USER, $COURSE;
+    global $CFG, $DB, $USER, $COURSE, $OUTPUT;
 
     $qtypemenu = question_type_menu();
 
@@ -81,7 +81,7 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
     $questions = $DB->get_records_sql($questionsql);
     $activityopen = qcreate_activity_open($qcreate);
 
-    print_heading(get_string('requiredquestions', 'qcreate'), 'center');
+    echo $OUTPUT->heading(get_string('requiredquestions', 'qcreate'));
     $qtyperequired = 0;
     $qtypedone = 0;
     $qtypeqs = qcreate_questions_of_type($questions);
@@ -241,11 +241,11 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
         $content .= '</em></li>';
         $content .= '</ul>';
     }
-    print_box($content, 'generalbox boxaligncenter boxwidthwide');
+    echo $OUTPUT->box($content, 'generalbox boxaligncenter boxwidthwide');
 }
 
 function qcreate_teacher_overview($requireds, $qcreate){
-    global $CFG;
+    global $CFG, $OUTPUT;
     $qtypemenu = question_type_menu();
     echo '<div class="mdl-align">';
     echo '<p><strong>'.get_string('requiredquestions', 'qcreate').'</strong> :</p>';
@@ -295,7 +295,7 @@ function qcreate_teacher_overview($requireds, $qcreate){
 
     $content .= "\n\t\t</ul>";
 
-    print_box($content, 'generalbox boxaligncenter boxwidthwide');
+    echo $OUTPUT->box($content, 'generalbox boxaligncenter boxwidthwide');
 }
 
 
@@ -330,7 +330,7 @@ function question_item_html($question, $questionurl, $thisurl, $qcreate, $cm, $s
         $questionlistitem .= "</em>";
     }
     if ($activityopen){
-        $questionlistitem .= qcreate_question_action_icons($cm->id, $question, $thisurl->out_as_local_url());
+        $questionlistitem .= qcreate_question_action_icons($cm->id, $question, $thisurl);
     }
 
     return $questionlistitem;

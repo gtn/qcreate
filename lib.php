@@ -78,7 +78,10 @@ function qcreate_student_q_access_sync($qcreate, $cmcontext=null, $course=null, 
         if ($course == null){
             $course = get_record('course', 'id', $qcreate->course);
         }
-        $studentrole = get_default_course_role($course);
+
+		$studentrole = get_archetype_roles('student');
+		$studentrole = reset($studentrole);
+
         if ($activityopen){
             $capabilitiestoassign = array (
                 0=> array('moodle/question:add'=> 1, 'moodle/question:usemine'=> -1, 'moodle/question:viewmine'=> -1, 'moodle/question:editmine'=> -1),

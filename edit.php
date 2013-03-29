@@ -97,6 +97,8 @@ $navlinks[] = array('name' => format_string($qcreate->name,true),
 $navlinks[] = array('name' => get_string('grading', 'qcreate'), 'link' => '', 'type' => 'title');
 $navigation = build_navigation($navlinks);
 
+$PAGE->set_url($thispageurl);
+
 print_header_simple(format_string($qcreate->name,true), "", $navigation,
         '', '', true, update_module_button($cm->id, $COURSE->id, $strqcreate), navmenu($COURSE, $cm));
 
@@ -336,9 +338,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
                 if ($final_grade->locked or $final_grade->overridden) {
                     $grade = '<div id="g'.$answer->qid.'">'.$final_grade->str_grade.'</div>';
                 } else {
-                    $menu = choose_from_menu(make_grades_menu($qcreate->grade),
-                                             'menu['.$answer->qid.']', $answer->grade,
-                                             get_string('nograde'),'',-1,true,false,$tabindex++);
+					$menu = html_writer::select(make_grades_menu($qcreate->grade), 'menu['.$answer->qid.']', $answer->grade, get_string('nograde'));
                     $grade = '<div id="g'.$answer->qid.'">'. $menu .'</div>';
                 }
 
@@ -347,9 +347,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
                 if ($final_grade->locked or $final_grade->overridden) {
                     $grade = '<div id="g'.$answer->qid.'">'.$final_grade->str_grade.'</div>';
                 } else {
-                    $menu = choose_from_menu(make_grades_menu($qcreate->grade),
-                                             'menu['.$answer->qid.']', $answer->grade,
-                                             get_string('nograde'),'',-1,true,false,$tabindex++);
+					$menu = html_writer::select(make_grades_menu($qcreate->grade), 'menu['.$answer->qid.']', $answer->grade, get_string('nograde'));
                     $grade = '<div id="g'.$answer->qid.'">'.$menu.'</div>';
                 }
             }
@@ -369,9 +367,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
             if ($final_grade->locked or $final_grade->overridden) {
                 $grade = '<div id="g'.$answer->qid.'">'.$final_grade->str_grade.'</div>';
             } else {   // allow editing
-                $menu = choose_from_menu(make_grades_menu($qcreate->grade),
-                                         'menu['.$answer->qid.']', $answer->grade,
-                                         get_string('nograde'),'',-1,true,false,$tabindex++);
+				$menu = html_writer::select(make_grades_menu($qcreate->grade), 'menu['.$answer->qid.']', $answer->grade, get_string('nograde'));
                 $grade = '<div id="g'.$answer->qid.'">'.$menu.'</div>';
             }
 
@@ -410,8 +406,8 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
                     $outcomes .= ': <span id="outcome_'.$n.'_'.$answer->qid.'">'.$options[$outcome->grades[$answer->qid]->grade].'</span>';
                 } else {
                     $outcomes .= ' ';
-                    $outcomes .= choose_from_menu($options, 'outcome_'.$n.'['.$answer->qid.']',
-                                $outcome->grades[$answer->qid]->grade, get_string('nooutcome', 'grades'), '', 0, true, false, 0, 'outcome_'.$n.'_'.$answer->qid);
+					$outcomes .= html_writer::select($options, 'outcome_'.$n.'['.$answer->qid.']',
+								$outcome->grades[$answer->qid]->grade, get_string('nooutcome', 'grades'), array('id'=>'outcome_'.$n.'_'.$answer->qid));
                 }
                 $outcomes .= '</div>';
             }

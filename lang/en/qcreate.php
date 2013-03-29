@@ -1,12 +1,14 @@
 <?php
+$string['pluginname'] = 'Question creation';
 $string['pluginadministration'] = 'Question creation Administration';
+
 $string['activityclosed'] = 'Activity is closed.';
-$string['activitygrade'] = 'You have been awarded a total grade of $a->grade / $a->outof for this activity.';
+$string['activitygrade'] = 'You have been awarded a total grade of {$a->grade} / {$a->outof} for this activity.';
 $string['activityname'] = 'Activity name';
 $string['activityopen'] = 'Activity is open.';
 $string['addminimumquestionshdr'] = 'Will Grade Minimum Number of Questions of Type (optional)';
 $string['allowall'] = 'Allow all question types';
-$string['allandother'] = 'To allow all question types, check \'$a\' and don\'t check anything else.';
+$string['allandother'] = 'To allow all question types, check \'{$a}\' and don\'t check anything else.';
 $string['allquestions'] = '0 - (All questions)';
 $string['allowedqtypes'] = 'Graded Question Types';
 $string['alreadydone'] = 'You\'ve done {$a} questions of this type.';
