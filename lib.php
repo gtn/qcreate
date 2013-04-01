@@ -275,12 +275,12 @@ function qcreate_print_recent_activity($course, $isteacher, $timestart) {
  * @todo Finish documenting this function
  **/
 function qcreate_cron () {
-    global $CFG;
+    global $CFG, $DB;
     $sql = "SELECT q.*, cm.id as cmidnumber, q.course as courseid
               FROM {$CFG->prefix}qcreate q, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m
              WHERE m.name='qcreate' AND m.id=cm.module AND cm.instance=q.id";
-    $rs = get_recordset_sql($sql);
-    while ($qcreate = rs_fetch_next_record($rs)) {
+    $rs = $DB->get_recordset_sql($sql);
+	foreach ($rs as $qcreate) {
         $context = get_context_instance(CONTEXT_MODULE, $qcreate->cmidnumber);
         if ($users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', '', '', false)){
             $users = array_keys($users);
@@ -290,13 +290,13 @@ function qcreate_cron () {
                            'AND qc.id = q.category ' .
                            'AND q.hidden=\'0\' AND q.parent=\'0\' ' .
                            'AND qc.contextid ='.$context->id;
-            $questionrs = get_recordset_sql($sql);
+            $questionrs = $DB->get_recordset_sql($sql);
             $toupdates = array();
-            while ($question = rs_fetch_next_record($questionrs)) {
+            foreach ($questionrs as $question) {
                 qcreate_process_local_grade($qcreate, $question, true);
                 $toupdates[] = $question->createdby;
             }
-            rs_close($questionrs);
+            $questionrs->close();
             $toupdates = array_unique($toupdates);
             foreach ($toupdates as $toupdate){
                 qcreate_update_grades($qcreate, $toupdate);
@@ -304,7 +304,7 @@ function qcreate_cron () {
         }
         qcreate_student_q_access_sync($qcreate);
     }
-    rs_close($rs);
+    $rs->close();
 
 
     return true;
@@ -604,7 +604,7 @@ function qcreate_prepare_new_grade($qcreate, $question) {
  * @param int $userid specific user only, 0 mean all
  */
 function qcreate_update_grades($qcreate=null, $userid=0) {
-    global $CFG;
+    global $CFG, $DB;
     if (!function_exists('grade_update')) { //workaround for buggy PHP versions
         require_once($CFG->libdir.'/gradelib.php');
     }
@@ -620,14 +620,14 @@ function qcreate_update_grades($qcreate=null, $userid=0) {
         $sql = "SELECT a.*, cm.idnumber as cmidnumber, a.course as courseid
                   FROM {$CFG->prefix}qcreate a, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m
                  WHERE m.name='qcreate' AND m.id=cm.module AND cm.instance=a.id";
-        $rs = get_recordset_sql($sql);
-        while ($qcreate = rs_fetch_next_record($rs)) {
+        $rs = $DB->get_recordset_sql($sql);
+		foreach ($rs as $qcreate) {
             qcreate_grade_item_update($qcreate);
             if ($qcreate->grade != 0) {
                 qcreate_update_grades($qcreate);
             }
         }
-        rs_close($rs);
+        $rs->close();
     }
 }
 /**
