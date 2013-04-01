@@ -25,15 +25,19 @@ if ($contexts->have_one_edit_tab_cap('questions')) {
                             get_string('grading', 'qcreate'), get_string('gradequestions', 'qcreate'));
 }
 questionbank_navigation_tabs($row, $contexts, $thispageurl->get_query_string());
+
+// no export tab here
 foreach ($row as $key => $tab){
     if ($tab->id == 'export'){
         unset($row[$key]);
     }
 }
+/*
 if ($contexts->have_one_edit_tab_cap('export')) {
     $row[] = new tabobject('exportgood', "$CFG->wwwroot/mod/qcreate/exportgood.php?".$thispageurl->get_query_string(),
                             get_string('export', 'quiz'), get_string('exportgoodquestions', 'qcreate'));
 }
+*/
 $tabs[] = $row;
 
 print_tabs($tabs, $mode);
