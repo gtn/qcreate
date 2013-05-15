@@ -30,17 +30,14 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->addRule('name', null, 'required', null, 'client');
     /// Adding the optional "intro" and "introformat" pair of fields
         $this->add_intro_editor(false, get_string('intro', 'qcreate'));
-        // TODO: $mform->setHelpButton('intro', array('writing', 'richtext'), false, 'editorhelpbutton');
-
-        // TODO: $mform->addElement('format', 'introformat', get_string('format'));
 
 //-------------------------------------------------------------------------------
         $mform->addElement('header', 'timinghdr', get_string('timing', 'form'));
         $mform->addElement('date_time_selector', 'timeopen', get_string('open', 'qcreate'), array('optional'=>true));
-        // TODO: $mform->setHelpButton('timeopen', array('timeopen', get_string('open', 'qcreate'), 'qcreate'));
+		$mform->addHelpButton('timeopen', 'open', 'qcreate');
 
         $mform->addElement('date_time_selector', 'timeclose', get_string('close', 'qcreate'), array('optional'=>true));
-        // TODO: $mform->setHelpButton('timeclose', array('timeopen', get_string('close', 'qcreate'), 'qcreate'));
+		$mform->addHelpButton('timeclose', 'close', 'qcreate');
 
 //-------------------------------------------------------------------------------
         $mform->addElement('header', 'gradeshdr', get_string('grading', 'qcreate'));
@@ -51,7 +48,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         }
         $mform->addElement('select', 'grade', get_string('grade'), $gradeoptions);
         $mform->setDefault('grade', 100);
-        // TODO: $mform->setHelpButton('grade', array('grade', get_string('grade'), 'qcreate'));
+        $mform->addHelpButton('grade', 'grade', 'qcreate');
 
         $graderatiooptions = array();
         foreach (array(100, 90, 80, 67, 60, 50, 40, 33, 30, 20, 10, 0)
@@ -63,7 +60,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         }
         $mform->addElement('select', 'graderatio', get_string('graderatio', 'qcreate'), $graderatiooptions);
         $mform->setDefault('graderatio', 50);
-        // TODO: $mform->setHelpButton('graderatio', array('automaticmanualgrading', get_string('graderatio', 'qcreate'), 'qcreate'));
+        $mform->addHelpButton('graderatio', 'graderatio', 'qcreate');
 
         $allowedgroup = array();
         $allowedgroup[] =& $mform->createElement('checkbox', "ALL", '', get_string('allowall', 'qcreate'));
@@ -74,13 +71,13 @@ class mod_qcreate_mod_form extends moodleform_mod {
         }
         $mform->addGroup($allowedgroup, 'allowed', get_string('allowedqtypes', 'qcreate'));
         $mform->disabledIf('allowed', "allowed[ALL]", 'checked');
-        // TODO: $mform->setHelpButton('allowed', array('gradedquestiontypes', get_string('allowedqtypes', 'qcreate'), 'qcreate'));
+        $mform->addHelpButton('allowed', 'allowedqtypes', 'qcreate');
 
         for ($i= 1; $i<=20; $i++){
             $noofquestionsmenu[$i] = $i;
         }
         $mform->addElement('select', 'totalrequired', get_string('noofquestionstotal', 'qcreate'), $noofquestionsmenu);
-        // TODO: $mform->setHelpButton('totalrequired', array('totalquestionsgraded', get_string('noofquestionstotal', 'qcreate'), 'qcreate'));
+        $mform->addHelpButton('totalrequired', 'noofquestionstotal', 'qcreate');
 
 
 //-------------------------------------------------------------------------------
@@ -94,8 +91,8 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $repeats = $this->repeat_elements($repeatarray, $repeats, array(), 'minrepeats', 'addminrepeats', 2);
 
         for ($i=0; $i<$repeats; $i++) {
-            // TODO: $mform->setHelpButton("qtype[$i]", array('questiontype', get_string('qtype', 'qcreate'), 'qcreate'));
-            // TODO: $mform->setHelpButton("minimumquestions[$i]", array('minimumquestions', get_string('minimumquestions', 'qcreate'), 'qcreate'));
+            $mform->addHelpButton("qtype[$i]", 'qtype', 'qcreate');
+            $mform->addHelpButton("minimumquestions[$i]", 'minimumquestions', 'qcreate');
             $mform->disabledIf("minimumquestions[$i]", "qtype[$i]", 'eq', '');
         }
 //-------------------------------------------------------------------------------
@@ -106,7 +103,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
                                 2=>get_string('studentaccesssaveasnew', 'qcreate'),
                                 3=>get_string('studentaccessedit', 'qcreate'));
         $mform->addElement('select', 'studentqaccess', get_string('studentqaccess', 'qcreate'), $studentqaccessmenu);
-        // TODO: $mform->setHelpButton('studentqaccess', array('studentquestionaccess', get_string('studentqaccess', 'qcreate'), 'qcreate'));
+        $mform->addHelpButton('studentqaccess', 'studentqaccess', 'qcreate');
 
 //-------------------------------------------------------------------------------
         // add standard elements, common to all modules
