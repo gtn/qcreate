@@ -226,7 +226,7 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
     $answercount = $DB->count_records_sql($countsql, $where[1]);
 
     //complicated status calculation is needed for sorting on status column
-    $select = 'SELECT q.id AS qid, u.id, u.firstname, u.lastname, u.picture,
+    $select = 'SELECT q.id AS qid, u.id, u.firstname, u.lastname, u.picture, u.email,
                       g.id AS gradeid, g.grade, g.gradecomment,
                       q.timemodified, g.timemarked,
                       q.qtype, q.name AS qname,
@@ -246,7 +246,6 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
 if ($grading_interface){ 
     echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post">';
     echo '<div>';
-    // TODO: echo $thispageurl->hidden_params_out(array('showgraded', 'showneedsregrade', 'showungraded'));
     //default value for checkbox when checkbox not checked.
     echo '<input type="hidden" name="showgraded" value="0" />';
     echo '<input type="hidden" name="showneedsregrade" value="0" />';
@@ -285,7 +284,9 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
         $final_grade = $grading_info->items[0]->grades[$answer->id];
     /// Calculate user status
         $answer->needsregrading = ($answer->timemarked <= $answer->timemodified);
-        $picture =  null; // TODO: print_user_picture($answer->id, $COURSE->id, $answer->picture, false, true);
+		
+		$answer->imagealt = fullname($answer);
+        $picture =  $OUTPUT->user_picture($answer, array('courseid'=>$COURSE->id));
 
         if (empty($answer->gradeid)) {
             $answer->grade = -1; //no grade yet
@@ -434,7 +435,6 @@ if ($tableHasData) {
     echo '<form action="'.$thispageurl->out(true).'" method="post">';
     echo '<div>';
     echo '<input type="hidden" name="gradessubmitted" value="1" />';
-	// TODO: echo $thispageurl->hidden_params_out();
     echo '</div>';
 }
 
@@ -455,7 +455,6 @@ echo "\n<br />";
 
 $form = '<form id="options" action="'.$thispageurl->out(true).'" method="post">';
 $form .=  '<fieldset class="invisiblefieldset">';
-// TODO: $form .= $thispageurl->hidden_params_out();
 $form .= '<input type="hidden" id="updatepref" name="updatepref" value="1" />';
 $form .= '<p>';
 $form .= '<label for="id_perpage">'.get_string('pagesize','qcreate').'</label>';

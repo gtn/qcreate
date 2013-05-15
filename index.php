@@ -1,89 +1,90 @@
 <?php // $Id: index.php,v 1.1 2007/09/07 06:31:51 jamiesensei Exp $
 /**
- * This page lists all the instances of qcreate in a particular course
- *
- * @author
- * @version $Id: index.php,v 1.1 2007/09/07 06:31:51 jamiesensei Exp $
- * @package qcreate
- **/
+* This page lists all the instances of qcreate in a particular course
+*
+* @author
+* @version $Id: index.php,v 1.1 2007/09/07 06:31:51 jamiesensei Exp $
+* @package qcreate
+**/
 
 /// Replace qcreate with the name of your module
 
-    require_once("../../config.php");
-    require_once("lib.php");
+require_once("../../config.php");
+require_once("lib.php");
 
-    $id = required_param('id', PARAM_INT);   // course
+$id = required_param('id', PARAM_INT);   // course
 
-    if (! $course = $DB->get_record("course", array("id"=>$id))) {
-        error("Course ID is incorrect");
-    }
+if (! $course = $DB->get_record("course", array("id"=>$id))) {
+	error("Course ID is incorrect");
+}
 
-    require_login($course->id);
+require_login($course->id);
 
-    add_to_log($course->id, "qcreate", "view all", "index.php?id=$course->id", "");
-
+add_to_log($course->id, "qcreate", "view all", "index.php?id=$course->id", "");
 
 /// Get all required stringsqcreate
 
-    $strqcreates = get_string("modulenameplural", "qcreate");
-    $strqcreate  = get_string("modulename", "qcreate");
+$strqcreates = get_string("modulenameplural", "qcreate");
+$strqcreate  = get_string("modulename", "qcreate");
 
 
 /// Print the header
 
-    $navlinks = array();
-    $navlinks[] = array('name' => $strqcreates, 'link' => '', 'type' => 'activity');
-    $navigation = build_navigation($navlinks);
+$navlinks = array();
+$navlinks[] = array('name' => $strqcreates, 'link' => '', 'type' => 'activity');
+$navigation = build_navigation($navlinks);
 
-    print_header_simple("$strqcreates", "", $navigation, "", "", true, "", navmenu($course));
+$PAGE->set_url("/mod/qcreate/index.php?id=$course->id");
+
+print_header_simple("$strqcreates", "", $navigation, "", "", true, "", navmenu($course));
 
 /// Get all the appropriate data
 
-    if (! $qcreates = get_all_instances_in_course("qcreate", $course)) {
-        notice("There are no qcreates", "../../course/view.php?id=$course->id");
-        die;
-    }
+if (! $qcreates = get_all_instances_in_course("qcreate", $course)) {
+	notice("There are no qcreates", "../../course/view.php?id=$course->id");
+	die;
+}
 
 /// Print the list of instances (your module will probably extend this)
 
-    $timenow = time();
-    $strname  = get_string("name");
-    $strweek  = get_string("week");
-    $strtopic  = get_string("topic");
+$timenow = time();
+$strname  = get_string("name");
+$strweek  = get_string("week");
+$strtopic  = get_string("topic");
 
-	$table = new html_table();
-	
-    if ($course->format == "weeks") {
-        $table->head  = array ($strweek, $strname);
-        $table->align = array ("center", "left");
-    } else if ($course->format == "topics") {
-        $table->head  = array ($strtopic, $strname);
-        $table->align = array ("center", "left", "left", "left");
-    } else {
-        $table->head  = array ($strname);
-        $table->align = array ("left", "left", "left");
-    }
+$table = new html_table();
 
-    foreach ($qcreates as $qcreate) {
-        if (!$qcreate->visible) {
-            //Show dimmed if the mod is hidden
-            $link = "<a class=\"dimmed\" href=\"view.php?id=$qcreate->coursemodule\">$qcreate->name</a>";
-        } else {
-            //Show normal if the mod is visible
-            $link = "<a href=\"view.php?id=$qcreate->coursemodule\">$qcreate->name</a>";
-        }
+if ($course->format == "weeks") {
+	$table->head  = array ($strweek, $strname);
+	$table->align = array ("center", "left");
+} else if ($course->format == "topics") {
+	$table->head  = array ($strtopic, $strname);
+	$table->align = array ("center", "left", "left", "left");
+} else {
+	$table->head  = array ($strname);
+	$table->align = array ("left", "left", "left");
+}
 
-        if ($course->format == "weeks" or $course->format == "topics") {
-            $table->data[] = array ($qcreate->section, $link);
-        } else {
-            $table->data[] = array ($link);
-        }
-    }
+foreach ($qcreates as $qcreate) {
+	if (!$qcreate->visible) {
+		//Show dimmed if the mod is hidden
+		$link = "<a class=\"dimmed\" href=\"view.php?id=$qcreate->coursemodule\">$qcreate->name</a>";
+	} else {
+		//Show normal if the mod is visible
+		$link = "<a href=\"view.php?id=$qcreate->coursemodule\">$qcreate->name</a>";
+	}
 
-    echo "<br />";
+	if ($course->format == "weeks" or $course->format == "topics") {
+		$table->data[] = array ($qcreate->section, $link);
+	} else {
+		$table->data[] = array ($link);
+	}
+}
 
-    echo html_writer::table($table);
+echo "<br />";
+
+echo html_writer::table($table);
 
 /// Finish the page
 
-    echo $OUTPUT->footer();
+echo $OUTPUT->footer();

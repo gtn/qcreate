@@ -384,7 +384,7 @@ function qcreate_grade_item_update($qcreate) {
         $qcreate->courseid = $qcreate->course;
     }
 
-    $params = array('itemname'=>$qcreate->name, 'idnumber'=>$qcreate->cmidnumber);
+	$params = array('itemname'=>$qcreate->name);
 
     if ($qcreate->grade > 0) {
         $params['gradetype'] = GRADE_TYPE_VALUE;
