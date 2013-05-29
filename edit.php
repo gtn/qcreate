@@ -87,20 +87,13 @@ $strsaveallfeedback = get_string('saveallfeedback', 'assignment');
 $tabindex = 1; //tabindex for quick grading tabbing; Not working for dropdowns yet
 
 add_to_log($COURSE->id, 'qcreate', 'grade', 'grades.php?id='.$qcreate->id, $qcreate->id, $cm->id);
-$strqcreate = get_string('modulename', 'qcreate');
-$strqcreates = get_string('modulenameplural', 'qcreate');
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => "index.php?id=$COURSE->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name,true),
-                    'link' => "view.php?id={$cm->id}",
-                    'type' => 'activityinstance');
-$navlinks[] = array('name' => get_string('grading', 'qcreate'), 'link' => '', 'type' => 'title');
-$navigation = build_navigation($navlinks);
 
 $PAGE->set_url($thispageurl);
-
-print_header_simple(format_string($qcreate->name,true), "", $navigation,
-        '', '', true, update_module_button($cm->id, $COURSE->id, $strqcreate), navmenu($COURSE, $cm));
+$PAGE->set_heading($qcreate->name.': '.get_string('grading', 'qcreate'));
+$PAGE->set_title($qcreate->name.': '.get_string('grading', 'qcreate'));
+$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'qcreate'));
+$PAGE->navbar->add(get_string('grading', 'qcreate'));
+echo $OUTPUT->header();
 
 $mode = 'editq';
 include('tabs.php');

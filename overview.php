@@ -34,16 +34,13 @@ add_to_log($COURSE->id, "qcreate", "overview", "overview.php?id=$cm->id", "$qcre
 $strqcreates = get_string("modulenameplural", "qcreate");
 $strqcreate  = get_string("modulename", "qcreate");
 
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => "index.php?id=$COURSE->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name), 'link' => '', 'type' => 'activityinstance');
-
-$navigation = build_navigation($navlinks);
-
 $PAGE->set_url("/mod/qcreate/overview.php?id=$cm->id");
+$PAGE->set_heading($qcreate->name.': '.get_string('overview', 'qcreate'));
+$PAGE->set_title($qcreate->name.': '.get_string('overview', 'qcreate'));
+$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'qcreate'));
+$PAGE->navbar->add(get_string('overview', 'qcreate'));
+echo $OUTPUT->header();
 
-print_header_simple(format_string($qcreate->name), "", $navigation, "", "", true,
-			  update_module_button($cm->id, $COURSE->id, $strqcreate), navmenu($COURSE, $cm));
 $mode = 'overview';
 
 include('tabs.php');

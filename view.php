@@ -71,14 +71,11 @@ if (has_capability('mod/qcreate:grade', $modulecontext)){
 $strqcreates = get_string("modulenameplural", "qcreate");
 $strqcreate  = get_string("modulename", "qcreate");
 
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => "index.php?id=$course->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name), 'link' => '', 'type' => 'activityinstance');
-
-$navigation = build_navigation($navlinks);
-
-$headerargs = array(format_string($qcreate->name), "", $navigation, "", "", true,
-			  update_module_button($cm->id, $course->id, $strqcreate), navmenu($course, $cm));
+$PAGE->set_url("/mod/qcreate/view.php?id=$cm->id");
+$PAGE->set_heading($qcreate->name);
+$PAGE->set_title($qcreate->name);
+$PAGE->set_button($OUTPUT->update_module_button($cm->id, 'qcreate'));
+$PAGE->navbar->add($qcreate->name);
 
 if (!$cats = get_categories_for_contexts($modulecontext->id)){
 	//if it has not been made yet then make a default cat
@@ -101,7 +98,7 @@ if ($delete && question_require_capability_on($delete, 'edit')){
 			redirect($CFG->wwwroot.'/mod/qcreate/view.php?id='.$cm->id);
 		}
 	} else {
-		call_user_func_array('print_header_simple', $headerargs);
+		echo $OUTPUT->header();
 		echo $OUTPUT->heading(get_string('delete'));
 		echo $OUTPUT->confirm(get_string('confirmdeletequestion', 'qcreate'), 
 			new moodle_url('view.php', array('id' => $cm->id, 'sesskey'=> sesskey(), 'confirm'=>1, 'delete'=>$delete)),
@@ -111,7 +108,8 @@ if ($delete && question_require_capability_on($delete, 'edit')){
 	}
 }
 
-call_user_func_array('print_header_simple', $headerargs);
+echo $OUTPUT->header();
+
 add_to_log($course->id, "qcreate", "view", "view.php?id=$cm->id", "$qcreate->id");
 
 $OUTPUT->box(format_text($qcreate->intro, $qcreate->introformat), 'generalbox', 'intro');

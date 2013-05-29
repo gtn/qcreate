@@ -29,14 +29,11 @@ $strqcreate  = get_string("modulename", "qcreate");
 
 
 /// Print the header
-
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => '', 'type' => 'activity');
-$navigation = build_navigation($navlinks);
-
 $PAGE->set_url("/mod/qcreate/index.php?id=$course->id");
-
-print_header_simple("$strqcreates", "", $navigation, "", "", true, "", navmenu($course));
+$PAGE->set_heading($strqcreates);
+$PAGE->set_title($strqcreates);
+$PAGE->navbar->add($strqcreates);
+echo $OUTPUT->header();
 
 /// Get all the appropriate data
 
