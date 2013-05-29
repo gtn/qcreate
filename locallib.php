@@ -193,7 +193,7 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
         }
         $extraquestionlinklist .= '</ul>';
 
-        $a= new object();
+        $a= new stdClass();
         $a->extraquestionsdone = $extraquestionsdone;
         $a->extrarequired = $qcreate->totalrequired - $qtyperequired;
         $content .= '<li><strong>';
@@ -214,12 +214,12 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
     $gradeforuser = $grading_info->items[0]->grades[$USER->id];
     if (!empty($gradeforuser->dategraded)){
 
-        $fullgrade = new object();
+        $fullgrade = new stdClass();
         $fullgrade->grade = (float)$gradeforuser->str_grade;
         $fullgrade->outof = (float)$grading_info->items[0]->grademax;
         $content .= '<li><em>'.get_string('activitygrade', 'qcreate', $fullgrade);
         if (!empty($qcreate->graderatio)){
-            $automaticgrade = new object();
+            $automaticgrade = new stdClass();
             $automaticquestiongrade = $grading_info->items[0]->grademax * ($qcreate->graderatio / 100) / $qcreate->totalrequired;
             $automaticgrade->outof = $grading_info->items[0]->grademax * ($qcreate->graderatio / 100);
             $automaticgrade->done = ($extraquestionsdone + $qtypedone);
@@ -231,7 +231,7 @@ function qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $mod
             }
             $content .= '<ul><li><em>'.get_string('automaticgrade', 'qcreate', $automaticgrade).'</em></li>';
             if ($showmanualgrades){
-                $manualgrade = new object();
+                $manualgrade = new stdClass();
                 $manualgrade->grade = $gradeforuser->grade -  $automaticgrade->grade;
                 $manualgrade->outof = $grading_info->items[0]->grademax - $automaticgrade->outof;
                 $content .= '<li><em>'.get_string('manualgrade', 'qcreate', $manualgrade).'</em></li>';
@@ -259,7 +259,7 @@ function qcreate_teacher_overview($requireds, $qcreate){
         }
     }
     if ($qtyperequired < $qcreate->totalrequired){
-        $a= new object();
+        $a= new stdClass();
         $a->extrarequired = $qcreate->totalrequired - $qtyperequired;
         if ($a->extrarequired == 1){
             $grammarised['extras'] = get_string('extraqgraded', 'qcreate', $a);
@@ -268,7 +268,7 @@ function qcreate_teacher_overview($requireds, $qcreate){
         }
 
 
-        $a= new object();
+        $a= new stdClass();
         $a->extrarequired = $qcreate->totalrequired - $qtyperequired;
 
         if ($qcreate->allowed != 'ALL'){

@@ -16,7 +16,7 @@ require_once($CFG->dirroot . '/question/editlib.php');
 
 list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('questions', '/mod/qcreate/edit.php');
 $qcreate->cmidnumber = $cm->id;
-require_capability('mod/qcreate:grade', get_context_instance(CONTEXT_MODULE, $cm->id));
+require_capability('mod/qcreate:grade', context_module::instance($cm->id));
 if ($qcreate->graderatio == 100){
     $grading_interface = false;
 } else {
@@ -51,7 +51,7 @@ $groupmode = groups_get_activity_groupmode($cm);
 $currentgroup = groups_get_activity_group($cm, true);
 
 /// Get all ppl that are allowed to submit assignments
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+$context = context_module::instance($cm->id);
 if (!$users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', $currentgroup, '', false)){
     $users = array();
 }

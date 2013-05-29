@@ -16,12 +16,12 @@ require_once($CFG->dirroot . '/question/editlib.php');
 
 list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('questions', true);
 $qcreate->cmidnumber = $cm->id;
-require_capability('mod/qcreate:grade', get_context_instance(CONTEXT_MODULE, $cm->id));
+require_capability('mod/qcreate:grade', context_module::instance($cm->id));
 
 $requireds = $DB->get_records('qcreate_required', array('qcreateid'=>$qcreate->id), 'qtype', 'qtype, no, id');
 
 
-$modulecontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+$modulecontext = context_module::instance($cm->id);
 
 
 require_login($COURSE->id);
@@ -50,7 +50,7 @@ include('tabs.php');
 
 echo $OUTPUT->box(format_text($qcreate->intro, $qcreate->introformat), 'generalbox', 'intro');
 
-$qcreatetime = new object();
+$qcreatetime = new stdClass();
 $qcreatetime->timeopen = userdate($qcreate->timeopen); 
 $qcreatetime->timeclose = userdate($qcreate->timeclose); 
 /*    if ($qcreate->timeopen == 0 AND $qcreate->timeclose ==0 ){
@@ -70,7 +70,7 @@ if ($qcreate->graderatio == 100){
 } else if ($qcreate->graderatio == 0){
 	$gradestring = get_string('gradeallmanual', 'qcreate');
 } else {
-	$gradeobj = new object();
+	$gradeobj = new stdClass();
 	$gradeobj->automatic = $qcreate->graderatio;
 	$gradeobj->manual = 100 - $qcreate->graderatio;
 	$gradestring = get_string('grademixed', 'qcreate', $gradeobj);

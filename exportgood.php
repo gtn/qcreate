@@ -20,7 +20,7 @@ if (!has_capability('moodle/question:viewmine', $contexts->lowest()) && !has_cap
 }
 
 // get display strings
-$txt = new object;
+$txt = new stdClass();
 $txt->category = get_string('category', 'quiz');
 $txt->download = get_string('download', 'quiz');
 $txt->downloadextra = get_string('downloadextra', 'quiz');
@@ -101,7 +101,7 @@ if ($from_form = $export_form->get_data()) {   /// Filename
 				}
 			}
 		} else {
-			$a = new object();
+			$a = new stdClass();
 			$a->betterthan = $from_form->betterthangrade;
 			$a->categoryname = $category->name;
 			notice(get_string('noquestionsabove', 'qcreate', $a));

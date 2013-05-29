@@ -53,7 +53,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $graderatiooptions = array();
         foreach (array(100, 90, 80, 67, 60, 50, 40, 33, 30, 20, 10, 0)
                                  as $graderatiooption){
-            $a = new object();
+            $a = new stdClass();
             $a->automatic = ($graderatiooption).'%';
             $a->manual = (100 - ($graderatiooption)).'%';
             $graderatiooptions[$graderatiooption] = get_string('graderatiooptions', 'qcreate', $a);

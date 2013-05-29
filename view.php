@@ -50,7 +50,7 @@ $requireds = $DB->get_records('qcreate_required', array('qcreateid'=>$qcreate->i
 $thisurl = new moodle_url('/mod/qcreate/view.php', array('id'=>$cm->id));
 $PAGE->set_url($thisurl);
 
-$modulecontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+$modulecontext = context_module::instance($cm->id);
 
 
 

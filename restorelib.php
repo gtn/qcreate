@@ -39,7 +39,7 @@
             }
 
             //Now, build the QCREATE record structure
-            $qcreate = new object();
+            $qcreate = new stdClass();
             $qcreate->course = $restore->course_id;
             $qcreate->name = backup_todb($info['MOD']['#']['NAME']['0']['#']);
             $qcreate->grade = backup_todb($info['MOD']['#']['GRADE']['0']['#']);
@@ -118,7 +118,7 @@
             $oldid = backup_todb($sub_info['#']['ID']['0']['#']);
 
             //Now, build the QCREATE_SUBMISSIONS record structure
-            $grade = new object();
+            $grade = new stdClass();
             $grade->qcreateid = $new_qcreate_id;
             $grade->questionid = backup_todb($sub_info['#']['QUESTIONID']['0']['#']);
             $grade->grade = backup_todb($sub_info['#']['GRADE']['0']['#']);
@@ -193,7 +193,7 @@
             $oldid = backup_todb($sub_info['#']['ID']['0']['#']);
 
             //Now, build the QCREATE_REQUIRED record structure
-            $required = new object();
+            $required = new stdClass();
             $required->qcreateid = $new_qcreate_id;
             $required->qtype = backup_todb($sub_info['#']['QTYPE']['0']['#']);
             $required->no = backup_todb($sub_info['#']['NO']['0']['#']);

@@ -73,7 +73,7 @@ function qcreate_student_q_access_sync($qcreate, $cmcontext=null, $course=null, 
    if ($forcesync || $needsync){
         if ($cmcontext == null){
             $cm = get_coursemodule_from_instance('qcreate', $qcreate->id);
-            $cmcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+            $cmcontext = context_module::instance($cm->id);
         }
         if ($course == null){
             $course = get_record('course', 'id', $qcreate->course);
@@ -281,7 +281,7 @@ function qcreate_cron () {
              WHERE m.name='qcreate' AND m.id=cm.module AND cm.instance=q.id";
     $rs = $DB->get_recordset_sql($sql);
 	foreach ($rs as $qcreate) {
-        $context = get_context_instance(CONTEXT_MODULE, $qcreate->cmidnumber);
+        $context = context_module::instance($qcreate->cmidnumber);
         if ($users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', '', '', false)){
             $users = array_keys($users);
             $sql = 'SELECT q.* FROM  '.$CFG->prefix.'question_categories qc, '.$CFG->prefix.'question q '.
@@ -464,7 +464,7 @@ function qcreate_process_grades($qcreate, $cm, $users){
 
     }
 
-    $message = notify(get_string('changessaved'), 'notifysuccess', 'center', true);
+    $message = $OUTPUT->notification(get_string('changessaved'), 'notifysuccess');
 
     return $message;
 }
@@ -584,7 +584,7 @@ function qcreate_get_grade($qcreate, $qid, $createnew=false) {
  * @return object The grade
  */
 function qcreate_prepare_new_grade($qcreate, $question) {
-    $grade = new Object;
+    $grade = new stdClass();
     $grade->qcreateid   = $qcreate->id;
     $grade->questionid  = $question->id;
     $grade->numfiles     = 0;
@@ -646,7 +646,7 @@ function qcreate_get_user_grades($qcreate, $userid=0) {
     } else {
        $user = '';
     }
-    $modulecontext = get_context_instance(CONTEXT_MODULE, $qcreate->cmidnumber);
+    $modulecontext = context_module::instance($qcreate->cmidnumber);
     $sql = "SELECT q.id, u.id AS userid, g.grade AS rawgrade, g.gradecomment AS feedback, g.teacher AS usermodified, q.qtype AS qtype
               FROM {$CFG->prefix}user u, {$CFG->prefix}question_categories qc, {$CFG->prefix}question q
               LEFT JOIN {$CFG->prefix}qcreate_grades g ON g.questionid = q.id

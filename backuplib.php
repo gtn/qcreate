@@ -192,7 +192,7 @@
     function qcreate_category_ids_by_instance ($instanceid, $backup_unique_code){
         
         $cm = get_coursemodule_from_instance('qcreate', $instanceid);
-        $modcontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $modcontext = context_module::instance($cm->id);
         $cats = get_records('question_categories', 'contextid', $modcontext->id, '', 'id, contextid');
         if ($cats){
             foreach ($cats as $cat){
