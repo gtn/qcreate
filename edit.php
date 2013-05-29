@@ -421,7 +421,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sor
     }
 }
 
-$table->print_html();  /// Print the whole table
+$table->finish_html();  /// Print the whole table
 $tableOutput = ob_get_clean();
 
 if ($tableHasData) {
