@@ -1,7 +1,9 @@
 This activity is for Moodle 2.x-versions, it will not work in Moodle 1.9 (or below)
 
-This module was originally created by Jamie Pratt (e-Mail: me@jamiep.org).
+This module was originally created by Jamie Pratt (e-Mail: me@jamiep.org) with funding from Future University Hakodate http://www.fun.ac.jp/e/
+The module was originally conceived and partially designed by Peter Ruthven-Stuart (http://www.ruthven-stuart.org), Future University - Hakodate.
 It has been migrated to Moodle 2.x-versions by gtn gmbh (global training network ltd. - http://gtn-solutions.com, http://www.exabis.at)
+
 
 * qcreate - Bugs, Feature Requests, and Improvements *
 
