@@ -407,7 +407,7 @@ function qcreate_grade_item_update($qcreate) {
  * @param array users array of ids of users who can take part in this activity.
  */
 function qcreate_process_grades($qcreate, $cm, $users){
-    global $USER, $DB;
+    global $USER, $OUTPUT, $DB;
     ///do the fast grading stuff
     $grading    = false;
     $commenting = false;
