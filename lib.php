@@ -564,16 +564,18 @@ function qcreate_get_grade($qcreate, $qid, $createnew=false) {
 	global $DB;
 	
     $grade = $DB->get_record('qcreate_grades', array('qcreateid'=>$qcreate->id, 'questionid'=>$qid));
+	// NEW:
+	// $grade = $DB->get_record_sql('SELECT * FROM {qcreate_grades} WHERE qcreateid=?, questionid=? ORDER BY timemarked DESC LIMIT 1', array($qcreate->id, $qid));
 
     if ($grade || !$createnew) {
         return $grade;
     }
     $newgrade = qcreate_prepare_new_grade($qcreate, $qid);
-    if (!insert_record("qcreate_grades", $newgrade)) {
+    if (!$DB->insert_record("qcreate_grades", $newgrade)) {
         error("Could not insert a new empty grade");
     }
 
-    return get_record('qcreate_grades', 'qcreate', $qcreate->id, 'questionid', $qid);
+    return $DB->get_record('qcreate_grades', array('qcreateid'=>$qcreate->id, 'questionid'=>$qid));
 }
 
 /**
@@ -770,5 +772,3 @@ function qcreate_time_status($qcreate){
     }
     return $string;
 }
-
-?>
