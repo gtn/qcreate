@@ -693,21 +693,11 @@ function qcreate_print_recent_mod_activity($activity, $courseid, $detail, $modna
 }
 
 /**
- * Function to be run periodically according to the moodle cron
- * This function searches for things that need to be done, such
- * as updating questions capacities, grades etc ...
+ * Function to be run periodically according to the scheduled task manager
+ * This function synchronize students access to questions according
+ * to the instance settings and to the open/closed status of the instance.
  *
- * @return boolean
- * NOTE: Since Moodle 2.7 this function is run by scheduled task rather
- * than standard cron.
  **/
-function qcreate_cron () {
-    global $CFG;
-
-    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
-    qcreate::cron();
-}
-
 function qcreate_student_q_access_sync($cmcontext, $qcreate, $forcesync= false) {
     global $DB;
 

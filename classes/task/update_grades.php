@@ -24,7 +24,7 @@
 namespace mod_qcreate\task;
 
 /**
- * Simple task to run the qcreate cron.
+ * Task to update grades for each qcreate instance.
  */
 class update_grades extends \core\task\scheduled_task {
 

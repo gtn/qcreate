@@ -110,7 +110,7 @@ if ($delete && question_has_capability_on($delete, 'edit')) {
             $DB->delete_records('qcreate_grades',
                     array('qcreateid' => $qcreateobj->get_instance()->id, 'questionid' => $question->id));
             question_delete_question($question->id);
-            qcreate_update_grades($qcreateobj->get_instance(), $USER->id);
+            qcreate_update_grades($qcreate, $USER->id);
             // Update completion state.
             $completion = new completion_info($course);
             if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {

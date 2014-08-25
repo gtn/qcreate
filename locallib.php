@@ -1206,6 +1206,7 @@ class qcreate {
         $delete  = optional_param('delete', 0, PARAM_INT);  // Question id to delete.
         $urlparams = array('id' => $this->get_course_module()->id,
                            'action' => 'view',
+                           'confirm' => 1,
                            'delete' => $delete,
                            'sesskey' => sesskey());
         $confirmurl = new moodle_url('/mod/qcreate/view.php', $urlparams);

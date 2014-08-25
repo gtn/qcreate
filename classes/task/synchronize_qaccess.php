@@ -24,7 +24,7 @@
 namespace mod_qcreate\task;
 
 /**
- * Simple task to run the qcreate cron.
+ * Synchronize students capabilites on questions for each instance of qcreate.
  */
 class synchronize_qaccess extends \core\task\scheduled_task {
 
