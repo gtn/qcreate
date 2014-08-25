@@ -1,127 +1,129 @@
-<?php  // $Id: view.php,v 1.10 2008/12/01 13:18:25 jamiesensei Exp $
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * This page prints a particular instance of qcreate
  *
- * @author
- * @version $Id: view.php,v 1.10 2008/12/01 13:18:25 jamiesensei Exp $
- * @package qcreate
- **/
+ * @package    mod_qcreate
+ * @copyright  2008 Jamie Pratt <me@jamiep.org>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ */
 
-/// (Replace qcreate with the name of your module)
-
-require_once("../../config.php");
-require_once("lib.php");
-require_once("locallib.php");
+require_once(dirname(__FILE__) . '/../../config.php');
+require_once($CFG->dirroot . '/mod/qcreate/lib.php');
+require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
 
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID, or
 $a  = optional_param('a', 0, PARAM_INT);  // qcreate ID
-$delete  = optional_param('delete', 0, PARAM_INT);  // question id to delete
-$confirm  = optional_param('confirm', 0, PARAM_BOOL);  
+$delete  = optional_param('delete', 0, PARAM_INT);  // Question id to delete.
+$confirm  = optional_param('confirm', 0, PARAM_BOOL);
+$qaction  = optional_param('qaction', '', PARAM_ALPHA); // Return from question bank.
+$lastchanged = optional_param('lastchanged', 0, PARAM_INT); // Id of created or edited question.
 
+$thisurl = new moodle_url('/mod/qcreate/view.php');
 if ($id) {
-	if (! $cm = $DB->get_record("course_modules", array("id"=>$id))) {
-		error("Course Module ID was incorrect");
-	}
+    if (! $cm = $DB->get_record("course_modules", array("id" => $id))) {
+        print_error('invalidcoursemodule');
+    }
 
-	if (! $course = $DB->get_record("course", array("id"=>$cm->course))) {
-		error("Course is misconfigured");
-	}
+    if (! $course = $DB->get_record("course", array("id" => $cm->course))) {
+        print_error('coursemisconf');
+    }
 
-	if (! $qcreate = $DB->get_record("qcreate", array("id"=>$cm->instance))) {
-		error("Course module is incorrect");
-	}
-
+    if (! $qcreate = $DB->get_record("qcreate", array("id" => $cm->instance))) {
+        print_error("Course module is incorrect");
+    }
+    $thisurl->param('id', $id);
 } else {
-	if (! $qcreate = $DB->get_record("qcreate", array("id"=>$a))) {
-		error("Course module is incorrect");
-	}
-	if (! $course = $DB->get_record("course", array("id"=>$qcreate->course))) {
-		error("Course is misconfigured");
-	}
-	if (! $cm = get_coursemodule_from_instance("qcreate", $qcreate->id, $course->id)) {
-		error("Course Module ID was incorrect");
-	}
+    if (! $qcreate = $DB->get_record("qcreate", array("id" => $a))) {
+        print_error('invalidqcreateid', 'qcreate');
+    }
+    if (! $course = $DB->get_record("course", array("id" => $qcreate->course))) {
+        print_error('invalidcourseid');
+    }
+    if (! $cm = get_coursemodule_from_instance("qcreate", $qcreate->id, $course->id)) {
+        print_error('invalidcoursemodule');
+    }
+    $thisurl->param('a', $a);
+}
+$modulecontext = context_module::instance($cm->id);
+
+if (!$cats = get_categories_for_contexts($modulecontext->id)) {
+    debugging('default category not set', DEBUG_DEVELOPER);
+}
+
+if (has_capability('mod/qcreate:grade', $modulecontext)) {
+    redirect($CFG->wwwroot.'/mod/qcreate/edit.php?cmid='.$cm->id);
 }
 $qcreate->cmidnumber = $cm->id;
 
-$requireds = $DB->get_records('qcreate_required', array('qcreateid'=>$qcreate->id), 'qtype', 'qtype, no, id');
-
-$thisurl = new moodle_url('/mod/qcreate/view.php', array('id'=>$cm->id));
+$thisurl = new moodle_url('/mod/qcreate/view.php', array('id' => $cm->id));
 $PAGE->set_url($thisurl);
 
-$modulecontext = get_context_instance(CONTEXT_MODULE, $cm->id);
+$qcreateobj = new qcreate($modulecontext, $cm, $course);
 
+qcreate_student_q_access_sync($modulecontext, $qcreateobj->get_instance());
 
+require_login($course, true, $cm);
 
-//modedit.php forwards to this page after creating coursemodule record.
-//this is the first chance we get to set capabilities in the newly created
-//context.
-qcreate_student_q_access_sync($qcreate, $modulecontext, $course);
+require_capability('mod/qcreate:view', $modulecontext);
 
+// Update completion state.
+$completion = new completion_info($course);
+if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {
+    $completion->update_state($cm, COMPLETION_COMPLETE);
+}
+$completion->set_module_viewed($cm);
 
-require_login($course->id);
-
-if (has_capability('mod/qcreate:grade', $modulecontext)){
-	redirect($CFG->wwwroot.'/mod/qcreate/edit.php?cmid='.$cm->id);
+if ($lastchanged &&($qaction == 'edit' || $qaction == 'add')) {
+    qcreate_update_grades($qcreate, $USER->id);
+    $params['cid'] = $qcreateobj->get_question_category()->id;
+    $params['lastchanged'] = $lastchanged;
+    if (!$question = $DB->get_record_select('question', "id = :lastchanged AND category = :cid", $params)) {
+        print_error('question_not_found');
+    } else {
+        $qcreateobj->notify_graders($question);
+    }
 }
 
+if ($delete && question_has_capability_on($delete, 'edit')) {
+    if ($confirm && confirm_sesskey()) {
+        $params['cid'] = $qcreateobj->get_question_category()->id;
+        $params['deleteid'] = $delete;
+        if (!$question = $DB->get_record_select('question', "id = :deleteid AND category = :cid", $params)) {
+            print_error('question_not_found');
+        } else {
+            $DB->delete_records('qcreate_grades',
+                    array('qcreateid' => $qcreateobj->get_instance()->id, 'questionid' => $question->id));
+            question_delete_question($question->id);
+            qcreate_update_grades($qcreateobj->get_instance(), $USER->id);
+            // Update completion state.
+            $completion = new completion_info($course);
+            if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {
+                $completion->update_state($cm, COMPLETION_INCOMPLETE);
+            }
 
-/// Print the page header
-$strqcreates = get_string("modulenameplural", "qcreate");
-$strqcreate  = get_string("modulename", "qcreate");
-
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => "index.php?id=$course->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name), 'link' => '', 'type' => 'activityinstance');
-
-$navigation = build_navigation($navlinks);
-
-$headerargs = array(format_string($qcreate->name), "", $navigation, "", "", true,
-			  update_module_button($cm->id, $course->id, $strqcreate), navmenu($course, $cm));
-
-if (!$cats = get_categories_for_contexts($modulecontext->id)){
-	//if it has not been made yet then make a default cat
-	question_make_default_categories(array($modulecontext));
-	$cats = get_categories_for_contexts($modulecontext->id);
-}
-$catsinctx = array();
-foreach ($cats as $catinctx){
-	$catsinctx[]=$catinctx->id;
-}
-$catsinctxlist = join($catsinctx, ',');
-$cat = array_shift($cats);
-
-if ($delete && question_require_capability_on($delete, 'edit')){
-	if ($confirm && confirm_sesskey()){
-		if (!$DB->delete_records_select('question', "id = $delete AND category IN ($catsinctxlist)")){
-			print_error('question_not_found');
-		} else {
-			qcreate_update_grades($qcreate, $USER->id);
-			redirect($CFG->wwwroot.'/mod/qcreate/view.php?id='.$cm->id);
-		}
-	} else {
-		call_user_func_array('print_header_simple', $headerargs);
-		echo $OUTPUT->heading(get_string('delete'));
-		echo $OUTPUT->confirm(get_string('confirmdeletequestion', 'qcreate'), 
-			new moodle_url('view.php', array('id' => $cm->id, 'sesskey'=> sesskey(), 'confirm'=>1, 'delete'=>$delete)),
-			new moodle_url('view.php', array('id' => $cm->id)));
-		echo $OUTPUT->footer('none');
-		die;
-	}
+            redirect($CFG->wwwroot.'/mod/qcreate/view.php?id='.$cm->id);
+        }
+    } else {
+        echo $qcreateobj->view(optional_param('action', 'confirmdelete', PARAM_TEXT));
+        die;
+    }
 }
 
-call_user_func_array('print_header_simple', $headerargs);
-add_to_log($course->id, "qcreate", "view", "view.php?id=$cm->id", "$qcreate->id");
-
-$OUTPUT->box(format_text($qcreate->intro, $qcreate->introformat), 'generalbox', 'intro');
-
-echo '<div class="mdl-align">';
-echo '<p>'.qcreate_time_status($qcreate).'</p>';
-echo '</div>';
-
-
-
-qcreate_required_q_list($requireds, $cat, $thisurl, $qcreate, $cm, $modulecontext);
-
-echo $OUTPUT->footer();
+// Get the qcreate class to render the view page.
+echo $qcreateobj->view(optional_param('action', 'view', PARAM_TEXT));

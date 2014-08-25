@@ -1,8 +1,12 @@
-This activity is for Moodle 2.x-versions, it will not work in Moodle 1.9 (or below)
+This activity is for Moodle 2.7.x-versions, it will not work with Moodle previous versions.
 
-This module was originally created by Jamie Pratt (e-Mail: me@jamiep.org) with funding from Future University Hakodate http://www.fun.ac.jp/e/
-The module was originally conceived and partially designed by Peter Ruthven-Stuart (http://www.ruthven-stuart.org), Future University - Hakodate.
-It has been migrated to Moodle 2.x-versions by gtn gmbh (global training network ltd. - http://gtn-solutions.com, http://www.exabis.at)
+This module was originally created by Jamie Pratt (e-Mail: me@jamiep.org) with funding from Future University Hakodate
+http://www.fun.ac.jp/e/
+The module was originally conceived and partially designed by Peter Ruthven-Stuart (http://www.ruthven-stuart.org),
+Future University - Hakodate.
+It has been migrated to Moodle 2.x-versions by gtn gmbh (global training network ltd. - http://gtn-solutions.com,
+http://www.exabis.at
+I was upgraded to Moodle 2.7 and enhanced by Jean-Michel Vedrine (email vedrine@vedrine.net).
 
 
 * qcreate - Bugs, Feature Requests, and Improvements *
@@ -13,21 +17,45 @@ If you have any problems installing this activity or suggestions for improvement
 
 * qcreate - Disclaimer *
 
-As with any customization, it is recommended that you have a good backup of your Moodle site before attempting to install contributed code.
-While those contributing code make every effort to provide the best code that they can, using contributed code nevertheless entails a certain degree of risk as contributed code is not as carefully reviewed and/or tested as the Moodle core code.
-Hence, use this block at your own risk.
+As with any customization, it is recommended that you have a good backup of your Moodle site before attempting to install
+contributed code.
+While those contributing code make every effort to provide the best code that they can, using contributed code nevertheless
+entails a certain degree of risk as contributed code is not as carefully reviewed and/or tested as the Moodle core code.
+Hence, use this plugin at your own risk.
 
 * qcreate - History *
 
 First official publishing-date: 2007/11/21 09:19:34 jamiesensei
 Migration to Moodle 2.4 2013/03/28 gtn gmbh
+Migration to Moodle2.7 2014/08/02 Jean-Michel Vedrine
 
-* qcreate - Installation *
+QUICK INSTALL
+=============
 
-1) Save the zip file somewhere onto your local computer and extract all the files
+There are two installation methods that are available. Follow one of these, then log into your Moodle site as an administrator
+and visit the notifications page to complete the install.
 
-2) Transfer the folder qcreate to the mod-directory of Moodle
+==================== MOST RECOMMENDED METHOD - Git ====================
 
-3) Log in as 'administrator' and click on the 'Home' link (Moodle 2.x)
+If you do not have git installed, please see the below link. Please note, it is not necessary to set up the SSH Keys.
+This is only needed if you are going to create a repository of your own on github.com.
 
-That's it!
+Information on installing git - http://help.github.com/set-up-git-redirect/
+
+Once you have git installed, simply visit the Moodle root directory and clone git://github.com/markn86/moodle-mod_certificate.git
+Remember to rename the folder to qcreate if you do not specify this in the clone command
+
+Eg. Linux command line would be as follow -
+
+git clone -b local_27 git://github.com/jmvedrine/qcreate.git mod/qcreate
+
+Use git pull to update this repository periodically to ensure you have the latest version.
+
+==================== Download the qcreate module. ====================
+
+Visit https://github.com/jmvedrine/qcreate/tree/local_27 and download the zip, uncompress this zip and extract the folder.
+The folder will have a name similar to qcreate-local_27, you MUST rename this to qcreate.
+Place this folder in your mod folder in your Moodle directory.
+
+nb. The reason this is not the recommended method is due to the fact you have to over-write the contents of this folder
+to apply any future updates to the qcreate module. In the above method there is a simple command to update the files.

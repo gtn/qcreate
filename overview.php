@@ -1,4 +1,19 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * This page prints an overview of a particular instance of qcreate for someone with grading permission
  *
@@ -7,8 +22,7 @@
  * @package qcreate
  **/
 
-
-require_once("../../config.php");
+require_once(dirname(__FILE__) . '/../../config.php');
 require_once($CFG->dirroot.'/mod/qcreate/lib.php');
 require_once($CFG->dirroot.'/mod/qcreate/locallib.php');
 require_once($CFG->dirroot . '/question/editlib.php');
@@ -16,73 +30,17 @@ require_once($CFG->dirroot . '/question/editlib.php');
 
 list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('questions', true);
 $qcreate->cmidnumber = $cm->id;
-require_capability('mod/qcreate:grade', get_context_instance(CONTEXT_MODULE, $cm->id));
+require_capability('mod/qcreate:grade', context_module::instance($cm->id));
 
-$requireds = $DB->get_records('qcreate_required', array('qcreateid'=>$qcreate->id), 'qtype', 'qtype, no, id');
+$modulecontext = context_module::instance($cm->id);
+$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
-
-$modulecontext = get_context_instance(CONTEXT_MODULE, $cm->id);
-
-
-require_login($COURSE->id);
+require_login($course->id);
 
 require_capability('mod/qcreate:grade', $modulecontext);
+$PAGE->set_url('/mod/qcreate/overview.php', array('cmid' => $cm->id));
 
-add_to_log($COURSE->id, "qcreate", "overview", "overview.php?id=$cm->id", "$qcreate->id");
+$qcreateobj = new qcreate($modulecontext, $cm, $course);
 
-/// Print the page header
-$strqcreates = get_string("modulenameplural", "qcreate");
-$strqcreate  = get_string("modulename", "qcreate");
-
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => "index.php?id=$COURSE->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name), 'link' => '', 'type' => 'activityinstance');
-
-$navigation = build_navigation($navlinks);
-
-$PAGE->set_url("/mod/qcreate/overview.php?id=$cm->id");
-
-print_header_simple(format_string($qcreate->name), "", $navigation, "", "", true,
-			  update_module_button($cm->id, $COURSE->id, $strqcreate), navmenu($COURSE, $cm));
-$mode = 'overview';
-
-include('tabs.php');
-
-echo $OUTPUT->box(format_text($qcreate->intro, $qcreate->introformat), 'generalbox', 'intro');
-
-$qcreatetime = new object();
-$qcreatetime->timeopen = userdate($qcreate->timeopen); 
-$qcreatetime->timeclose = userdate($qcreate->timeclose); 
-/*    if ($qcreate->timeopen == 0 AND $qcreate->timeclose ==0 ){
-	$timestring = get_string('timenolimit', 'qcreate');
-} else if ($qcreate->timeopen != 0 AND $qcreate->timeclose ==0 ) {
-	$timestring = get_string('timeopen', 'qcreate', $qcreatetime);
-	
-} else if ($qcreate->timeopen == 0 AND $qcreate->timeclose !=0 ) {
-	$timestring = get_string('timeclose', 'qcreate', $qcreatetime);
-} else {
-	$timestring = get_string('timeopenclose', 'qcreate', $qcreatetime);
-}*/
-$timestring = qcreate_time_status($qcreate);
-
-if ($qcreate->graderatio == 100){
-	$gradestring = get_string('gradeallautomatic', 'qcreate');
-} else if ($qcreate->graderatio == 0){
-	$gradestring = get_string('gradeallmanual', 'qcreate');
-} else {
-	$gradeobj = new object();
-	$gradeobj->automatic = $qcreate->graderatio;
-	$gradeobj->manual = 100 - $qcreate->graderatio;
-	$gradestring = get_string('grademixed', 'qcreate', $gradeobj);
-}
-	
-echo '<div class="mdl-align">';
-echo '<p>'.$timestring.'</p>';
-echo '<p><strong>'.get_string('totalgrade', 'qcreate').'</strong> : '.$qcreate->grade.'</p>';
-echo '<p><strong>'.get_string('graderatio', 'qcreate').'</strong> : '.$gradestring.'</p>';
-echo '</div>';
-
-
-qcreate_teacher_overview($requireds, $qcreate);
-
-echo $OUTPUT->footer();
+// Get the qcreate class to render the overview page.
+echo $qcreateobj->view(optional_param('action', 'overview', PARAM_TEXT));
