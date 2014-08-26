@@ -260,11 +260,6 @@ function qcreate_print_overview($courses, &$htmlarray) {
  * @param int $id Id of the module instance
  * @return boolean Success/Failure
  **/
-/**
- * delete a qcreate instance
- * @param int $id
- * @return bool
- */
 function qcreate_delete_instance($id) {
     global $CFG;
     require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
@@ -901,6 +896,12 @@ function qcreate_process_grades($qcreate, $cm, $users) {
     return $message;
 }
 
+/**
+ * Process submitted grades.
+ * @param opbject qcreate the qcreate object with cmidnumber set to $cm->id
+ * @param object question with id and createdby
+ * @param array users array of ids of users who can take part in this activity.
+ */
 function qcreate_process_local_grade($qcreate, $question,
         $forcenewgrade = false, $notifystudent = false, $submittedgrade = -1, $submittedcomment = '') {
     global $CFG, $USER, $DB;

@@ -53,6 +53,7 @@ class update_grades extends \core\task\scheduled_task {
         if ($qcreates) {
             foreach ($qcreates as $qcreate) {
                 $context = \context_module::instance($qcreate->cmidnumber);
+                // Get allusers that can create questions for this instance.
                 if ($users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', '', '', false)) {
                     $users = array_keys($users);
                     $sql = 'SELECT q.* FROM {question_categories} qc, {question} q '.
@@ -64,7 +65,8 @@ class update_grades extends \core\task\scheduled_task {
                     $questionrs = $DB->get_recordset_sql($sql);
                     $toupdates = array();
                     foreach ($questionrs as $question) {
-                        qcreate_process_local_grade($qcreate, $question, true, true);
+                        // Process local grades without notification.
+                        qcreate_process_local_grade($qcreate, $question, true, false);
                         $toupdates[] = $question->createdby;
                     }
                     $questionrs->close();
