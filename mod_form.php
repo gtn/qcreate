@@ -54,15 +54,18 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->addElement('text', 'name', get_string('name'), array('size' => '64'));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+
         // Adding the optional "intro" and "introformat" pair of fields.
         $this->add_intro_editor(false, get_string('intro', 'qcreate'));
 
-        $mform->addElement('header', 'timinghdr', get_string('timing', 'form'));
+        // Open and close time.
+        $mform->addElement('header', 'timinghdr', get_string('availability', 'qcreate'));
         $mform->addElement('date_time_selector', 'timeopen', get_string('open', 'qcreate'), array('optional' => true));
         $mform->addHelpButton('timeopen', 'open', 'qcreate');
-
         $mform->addElement('date_time_selector', 'timeclose', get_string('close', 'qcreate'), array('optional' => true));
-
+        
+        // Grading.
         $mform->addElement('header', 'gradeshdr', get_string('grading', 'qcreate'));
         $gradeoptions = array();
         $gradeoptions[0] = get_string('nograde');
@@ -83,6 +86,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->addElement('select', 'graderatio', get_string('graderatio', 'qcreate'), $graderatiooptions);
         $mform->setDefault('graderatio', 50);
         $mform->addHelpButton('graderatio', 'graderatio', 'qcreate');
+        $mform->setExpanded('gradeshdr', true);
 
         $allowedgroup = array();
         $allowedgroup[] =& $mform->createElement('checkbox', "ALL", '', get_string('allowall', 'qcreate'));
@@ -103,16 +107,16 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->addElement('select', 'totalrequired', get_string('noofquestionstotal', 'qcreate'), $noofquestionsmenu);
         $mform->addHelpButton('totalrequired', 'noofquestionstotal', 'qcreate');
 
+        $mform->addElement('header', 'addminimumquestionshdr', get_string('addminimumquestionshdr', 'qcreate'));
         $repeatarray = array();
-        $repeatarray[] =& $mform->createElement('header', 'addminimumquestionshdr',
-                get_string('addminimumquestionshdr', 'qcreate'));
         $qtypeselect = array('' => get_string('selectone', 'qcreate')) + $allowedqtypes;
         $repeatarray[] =& $mform->createElement('select', 'qtype', get_string('qtype', 'qcreate'), $qtypeselect);
         $repeatarray[] =& $mform->createElement('select', 'minimumquestions', get_string('minimumquestions', 'qcreate'),
                 $noofquestionsmenu);
         $requiredscount = count($this->_requireds);
         $repeats = $this->_requireds ? $requiredscount + 2 : 4;
-        $repeats = $this->repeat_elements($repeatarray, $repeats, array(), 'minrepeats', 'addminrepeats', 2);
+        $repeats = $this->repeat_elements($repeatarray, $repeats, array(), 'minrepeats', 'addminrepeats', 2,
+                get_string('addmorerequireds', 'qcreate'), true);
 
         for ($i = 0; $i < $repeats; $i++) {
             $mform->addHelpButton("qtype[$i]", 'qtype', 'qcreate');
