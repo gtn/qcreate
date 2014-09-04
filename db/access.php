@@ -78,7 +78,7 @@ $capabilities = array(
         )
     ),
 
-    'mod/qcreate:receivestudentnotification' => array(
+    'mod/qcreate:receivestudentnotifications' => array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => array(

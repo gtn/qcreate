@@ -90,12 +90,17 @@ class mod_qcreate_mod_form extends moodleform_mod {
 
         $allowedgroup = array();
         $allowedgroup[] =& $mform->createElement('checkbox', "ALL", '', get_string('allowall', 'qcreate'));
-        $mform->setDefault("allowed[ALL]", 1);
+        
         $qtypemenu = qcreate::qtype_menu();
         $allowedqtypes = array();
         foreach ($qtypemenu as $qtype => $name) {
             $allowedgroup[] =& $mform->createElement('checkbox', $qtype, '', $name);
             $allowedqtypes[$qtype] = $name;
+        }
+        if (question_bank::is_qtype_installed('multichoice')) {
+            $mform->setDefault("allowed[multichoice]", 1);
+        } else {
+            $mform->setDefault("allowed[ALL]", 1);
         }
         $mform->addGroup($allowedgroup, 'allowed', get_string('allowedqtypes', 'qcreate'));
         $mform->disabledIf('allowed', "allowed[ALL]", 'checked');

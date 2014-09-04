@@ -18,7 +18,7 @@
  * This file contains a renderer for the qcreatement class
  *
  * @package   mod_qcreate
- * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
+ * @copyright 2014 Jean-Michel vedrine
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
