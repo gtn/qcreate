@@ -20,7 +20,8 @@
  * For naming conventions, see lib/db/access.php.
  *
  * @package    mod_qcreate
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @copyright  2014 Jean-Michel Vedrine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();

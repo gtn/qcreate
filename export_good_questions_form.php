@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * This class manage export of good questions form.
+ *
+ * @package    mod_qcreate
+ * @copyright  2008 Jamie Pratt <me@jamiep.org>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ */
+
 require_once($CFG->dirroot . '/question/export_form.php');
 
 class qcreate_export_good_questions_form extends question_export_form {

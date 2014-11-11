@@ -18,9 +18,9 @@
  * Export questions in the given category and which have been assigned a grade
  * above a certain level.
  *
- * @author Martin Dougiamas, Howard Miller, Jamie Pratt and many others.
- *         {@link http://moodle.org}
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
+ * @package    mod_qcreate
+ * @copyright  2008 Jamie Pratt <me@jamiep.org>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
 
 require_once(dirname(__FILE__) . '/../../config.php');

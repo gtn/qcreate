@@ -17,9 +17,9 @@
 /**
  * This page prints an overview of a particular instance of qcreate for someone with grading permission
  *
- * @author
- * @version $Id: overview.php,v 1.3 2008/12/01 13:18:25 jamiesensei Exp $
- * @package qcreate
+ * @package    mod_qcreate
+ * @copyright  2008 Jamie Pratt <me@jamiep.org>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  **/
 
 require_once(dirname(__FILE__) . '/../../config.php');
