@@ -64,7 +64,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->addElement('date_time_selector', 'timeopen', get_string('open', 'qcreate'), array('optional' => true));
         $mform->addHelpButton('timeopen', 'open', 'qcreate');
         $mform->addElement('date_time_selector', 'timeclose', get_string('close', 'qcreate'), array('optional' => true));
-        
+
         // Grading.
         $mform->addElement('header', 'gradeshdr', get_string('grading', 'qcreate'));
         $gradeoptions = array();
@@ -90,7 +90,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
 
         $allowedgroup = array();
         $allowedgroup[] =& $mform->createElement('checkbox', "ALL", '', get_string('allowall', 'qcreate'));
-        
+
         $qtypemenu = qcreate::qtype_menu();
         $allowedqtypes = array();
         foreach ($qtypemenu as $qtype => $name) {
