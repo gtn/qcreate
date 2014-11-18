@@ -67,7 +67,6 @@ class backup_qcreate_activity_structure_step extends backup_questions_activity_s
         // All the rest of elements only happen if we are including user info.
         if ($userinfo) {
             $grade->set_source_table('qcreate_grades', array('qcreateid' => backup::VAR_PARENTID));
-            $grade->annotate_ids('user', 'teacher');
         }
 
         // Define source alias.
