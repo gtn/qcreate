@@ -91,7 +91,7 @@ if ($fromform = $exportform->get_data()) {   // Filename.
     require_once($CFG->dirroot . '/question/format.php');
 
     // And then the class for the selected format.
-    require_once($CFG->dirroot . '/question/format/$fromform->format/format.php');
+    require_once($CFG->dirroot . "/question/format/$fromform->format/format.php");
 
     $classname = "qformat_$fromform->format";
     $qformat = new $classname();
