@@ -56,8 +56,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
-        // Adding the optional "intro" and "introformat" pair of fields.
-        $this->add_intro_editor(false, get_string('intro', 'qcreate'));
+        $this->standard_intro_elements(get_string('intro', 'qcreate'));
 
         // Open and close time.
         $mform->addElement('header', 'timinghdr', get_string('availability', 'qcreate'));

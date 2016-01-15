@@ -200,7 +200,7 @@ class mod_qcreate_renderer extends plugin_renderer_base {
             if ($timenow < $timeclose) {
                 $string .= ' '.get_string('timewillclose', 'qcreate', userdate($timeclose));
             } else {
-                $string .= ' '.get_string('timeclosed', 'qcreate', userdate($qcreate->timeclose));
+                $string .= ' '.get_string('timeclosed', 'qcreate', userdate($timeclose));
             }
         }
         return $string;

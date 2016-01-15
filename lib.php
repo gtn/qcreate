@@ -64,8 +64,6 @@ function qcreate_supports($feature) {
             return true;
         case FEATURE_GROUPINGS:
             return true;
-        case FEATURE_GROUPMEMBERSONLY:
-            return true;
         case FEATURE_MOD_INTRO:
             return true;
         case FEATURE_COMPLETION_TRACKS_VIEWS:
@@ -704,20 +702,21 @@ function qcreate_student_q_access_sync($cmcontext, $qcreate, $forcesync= false) 
         ($qcreate->timeclose == 0 ||($qcreate->timeclose > $qcreate->timesync));
     $needsync = (empty($qcreate->timesync) || // No sync has happened yet.
             ($activitywasopen != $activityopen));
+
     if ($forcesync || $needsync) {
         $studentrole = get_archetype_roles('student');
         $studentrole = reset($studentrole);
 
         if ($activityopen) {
             $capabilitiestoassign = array (
-                0 => array('moodle/question:add' => 1, 'moodle/question:usemine' => -1,
-                        'moodle/question:viewmine' => -1, 'moodle/question:editmine' => -1),
-                1 => array('moodle/question:add' => 1, 'moodle/question:usemine' => 1,
-                        'moodle/question:viewmine' => -1, 'moodle/question:editmine' => -1),
-                2 => array('moodle/question:add' => 1, 'moodle/question:usemine' => 1,
-                        'moodle/question:viewmine' => 1, 'moodle/question:editmine' => -1),
-                3 => array('moodle/question:add' => 1, 'moodle/question:usemine' => 1,
-                        'moodle/question:viewmine' => 1, 'moodle/question:editmine' => 1));
+                0 => array('moodle/question:add' => CAP_ALLOW, 'moodle/question:usemine' => CAP_PREVENT,
+                        'moodle/question:viewmine' => CAP_PREVENT, 'moodle/question:editmine' => CAP_PREVENT),
+                1 => array('moodle/question:add' => CAP_ALLOW, 'moodle/question:usemine' => CAP_ALLOW,
+                        'moodle/question:viewmine' => CAP_PREVENT, 'moodle/question:editmine' => CAP_PREVENT),
+                2 => array('moodle/question:add' => CAP_ALLOW, 'moodle/question:usemine' => CAP_ALLOW,
+                        'moodle/question:viewmine' => CAP_ALLOW, 'moodle/question:editmine' => CAP_PREVENT),
+                3 => array('moodle/question:add' => CAP_ALLOW, 'moodle/question:usemine' => CAP_ALLOW,
+                        'moodle/question:viewmine' => CAP_ALLOW, 'moodle/question:editmine' => CAP_ALLOW));
             foreach ($capabilitiestoassign[$qcreate->studentqaccess] as $capability => $permission) {
                     assign_capability($capability, $permission, $studentrole->id, $cmcontext->id, true);
             }

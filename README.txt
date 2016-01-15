@@ -1,4 +1,4 @@
-This activity is for Moodle 2.7.x and 2.8 versions, it will not work with Moodle previous versions.
+This activity is for Moodle 2.7 and ulterior versions, it will not work with Moodle previous versions.
 
 This module was originally created by Jamie Pratt (e-Mail: me@jamiep.org) with funding from Future University Hakodate
 http://www.fun.ac.jp/e/
