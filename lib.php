@@ -257,8 +257,9 @@ function qcreate_refresh_events($courseid = 0, $instance = null, $cm = null) {
  * @param  stdClass $cm Course module object.
  */
 function qcreate_update_events($qcreate, $course = null, $cm = null) {
-    global $DB;
+    global $DB, $CFG;
     require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+
     if (!isset($course)) {
         // Get course and course module for the qcreate.
         list($course, $cm) = get_course_and_cm_from_instance($qcreate->id, 'qcreate', $qcreate->course);
@@ -1147,7 +1148,7 @@ function qcreate_update_grades($qcreate=null, $userid=0, $nullifnone = true) {
  */
 function qcreate_get_user_grades($qcreate, $userid=0) {
     global $DB;
-    
+
     $cm = get_coursemodule_from_instance('qcreate', $qcreate->id, 0, false, MUST_EXIST);
     $context = context_module::instance($cm->id);
     if (is_array($userid)) {
