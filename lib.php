@@ -20,6 +20,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Library of functions and constants for module qcreate
  * This file should have two well differenced parts:
@@ -40,16 +42,21 @@
  */
 define('QCREATE_EDIT_POPUP_OPTIONS', 'scrollbars=yes,resizable=yes,width=800,height=540');
 
-/**
- * If start and end date for the quiz are more than this many seconds apart
- * they will be represented by two separate events in the calendar
- */
-define("QCREATE_MAX_EVENT_LENGTH", 5 * 24 * 60 * 60);   // 5 days maximum.
-
 /** Set QCREATE_PER_PAGE to 0 if you wish to display all questions on the edit page */
 define('QCREATE_PER_PAGE', 10);
 
 define('QCREATE_MAX_PER_PAGE', 100);
+
+/**
+ * Event types.
+ */
+define('QCREATE_EVENT_TYPE_OPEN', 'open');
+define('QCREATE_EVENT_TYPE_CLOSE', 'close');
+/**
+ * If start and end date for the qcreate activity are more than this many seconds apart
+ * they will be represented by two separate events in the calendar
+ */
+define("QCREATE_MAX_EVENT_LENGTH", 5 * 24 * 60 * 60);   // 5 days maximum.
 
 /**
  * Returns the information on whether the module supports a feature
@@ -152,6 +159,56 @@ function qcreate_update_instance(stdClass $data, $form) {
 }
 
 /**
+ * Given an ID of an instance of this module,
+ * this function will permanently delete the instance
+ * and any data that depends on it.
+ *
+ * @param int $id Id of the module instance
+ * @return boolean Success/Failure
+ **/
+function qcreate_delete_instance($id) {
+    global $CFG;
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+
+    $cm = get_coursemodule_from_instance('qcreate', $id, 0, false, MUST_EXIST);
+    $context = context_module::instance($cm->id);
+
+    $qcreateobj = new qcreate($context, null, null);
+    return $qcreateobj->delete_instance();
+}
+
+/**
+ * This function is used by the reset_course_userdata function in moodlelib.
+ * This function will remove all grades from the specified qcreate
+ * and clean up any related data.
+ *
+ * @param $data the data submitted from the reset course.
+ * @return array status array
+ */
+function qcreate_reset_userdata($data) {
+    global $CFG, $DB;
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+
+    $status = array();
+    $params = array('courseid' => $data->courseid);
+    $sql = "SELECT a.id FROM {qcreate} a WHERE a.course=:courseid";
+    $course = $DB->get_record('course', array('id' => $data->courseid), '*', MUST_EXIST);
+    if ($qcreates = $DB->get_records_sql($sql, $params)) {
+        foreach ($qcreates as $qcreate) {
+            $cm = get_coursemodule_from_instance('qcreate',
+                                                 $qcreate->id,
+                                                 $data->courseid,
+                                                 false,
+                                                 MUST_EXIST);
+            $context = context_module::instance($cm->id);
+            $qcreateobj = new qcreate($context, $cm, $course);
+            $status = array_merge($status, $qcreateobj->reset_userdata($data));
+        }
+    }
+    return $status;
+}
+
+/**
  * This standard function will check all instances of this module
  * and make sure there are up-to-date events created for each of them.
  * If courseid = 0, then every qcreate event in the site is checked, else
@@ -159,10 +216,21 @@ function qcreate_update_instance(stdClass $data, $form) {
  * This function is used, in its new format, by restore_refresh_events()
  *
  * @param int $courseid
+ * @param int|stdClass $instance qcreate module instance or ID.
+ * @param int|stdClass $cm Course module object or ID (not used in this module).
  * @return bool
  */
-function qcreate_refresh_events($courseid = 0) {
+function qcreate_refresh_events($courseid = 0, $instance = null, $cm = null) {
     global $DB;
+
+    // If we have instance information then we can just update the one event instead of updating all events.
+    if (isset($instance)) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('qcreate', array('id' => $instance), '*', MUST_EXIST);
+        }
+        qcreate_update_events($instance);
+        return true;
+    }
 
     if ($courseid == 0) {
         if (!$qcreates = $DB->get_records('qcreate')) {
@@ -175,15 +243,31 @@ function qcreate_refresh_events($courseid = 0) {
     }
 
     foreach ($qcreates as $qcreate) {
-        $cm = get_coursemodule_from_instance('qcreate', $qcreate->id, 0, false, MUST_EXIST);
-        $context = context_module::instance($cm->id);
-        $qcreateobj = new qcreate($context, $cm, null);
-        $qcreateobj->update_calendar($qcreateobj->get_course_module()->id);
+        qcreate_update_events($qcreate);
     }
 
     return true;
 }
 
+/**
+ * This actually updates the activity calendar events.
+ *
+ * @param  stdClass $qcreate qcreate object (from DB).
+ * @param  stdClass $course Course object.
+ * @param  stdClass $cm Course module object.
+ */
+function qcreate_update_events($qcreate, $course = null, $cm = null) {
+    global $DB;
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+    if (!isset($course)) {
+        // Get course and course module for the qcreate.
+        list($course, $cm) = get_course_and_cm_from_instance($qcreate->id, 'qcreate', $qcreate->course);
+    }
+    // Refresh the qcreate's calendar events.
+    $context = context_module::instance($cm->id);
+    $qcreateobj = new qcreate($context, $cm, $course);
+    $qcreateobj->update_calendar($cm->id);
+}
 /**
  * Prints qcreate summaries on MyMoodle Page
  * @param array $courses
@@ -191,6 +275,9 @@ function qcreate_refresh_events($courseid = 0) {
  */
 function qcreate_print_overview($courses, &$htmlarray) {
     global $USER, $CFG;
+
+    debugging('The function qcreate_print_overview() is now deprecated.', DEBUG_DEVELOPER);
+
     // These next 6 Lines are constant in all modules (just change module name).
     if (empty($courses) || !is_array($courses) || count($courses) == 0) {
         return array();
@@ -248,56 +335,6 @@ function qcreate_print_overview($courses, &$htmlarray) {
             }
         }
     }
-}
-
-/**
- * Given an ID of an instance of this module,
- * this function will permanently delete the instance
- * and any data that depends on it.
- *
- * @param int $id Id of the module instance
- * @return boolean Success/Failure
- **/
-function qcreate_delete_instance($id) {
-    global $CFG;
-    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
-
-    $cm = get_coursemodule_from_instance('qcreate', $id, 0, false, MUST_EXIST);
-    $context = context_module::instance($cm->id);
-
-    $qcreateobj = new qcreate($context, null, null);
-    return $qcreateobj->delete_instance();
-}
-
-/**
- * This function is used by the reset_course_userdata function in moodlelib.
- * This function will remove all grades from the specified qcreate
- * and clean up any related data.
- *
- * @param $data the data submitted from the reset course.
- * @return array status array
- */
-function qcreate_reset_userdata($data) {
-    global $CFG, $DB;
-    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
-
-    $status = array();
-    $params = array('courseid' => $data->courseid);
-    $sql = "SELECT a.id FROM {qcreate} a WHERE a.course=:courseid";
-    $course = $DB->get_record('course', array('id' => $data->courseid), '*', MUST_EXIST);
-    if ($qcreates = $DB->get_records_sql($sql, $params)) {
-        foreach ($qcreates as $qcreate) {
-            $cm = get_coursemodule_from_instance('qcreate',
-                                                 $qcreate->id,
-                                                 $data->courseid,
-                                                 false,
-                                                 MUST_EXIST);
-            $context = context_module::instance($cm->id);
-            $qcreateobj = new qcreate($context, $cm, $course);
-            $status = array_merge($status, $qcreateobj->reset_userdata($data));
-        }
-    }
-    return $status;
 }
 
 /**
@@ -663,8 +700,7 @@ function qcreate_print_recent_mod_activity($activity, $courseid, $detail, $modna
     if ($detail) {
         $modname = $modnames[$activity->type];
         echo '<div class="title">';
-        echo '<img src="' . $OUTPUT->pix_url('icon', 'qcreate') . '" '.
-             'class="icon" alt="' . $modname . '">';
+        echo '<img src="' . $OUTPUT->pix_icon('icon', 'qcreate') . '">';
         echo '<a href="' . $CFG->wwwroot . '/mod/qcreate/view.php?id=' . $activity->cmid . '">';
         echo $activity->name;
         echo '</a>';
@@ -1066,17 +1102,26 @@ function qcreate_prepare_new_local_grade($qcreate, $question) {
  *
  * @param object $qcreate null means all qcreates
  * @param int $userid specific user only, 0 mean all
+ * @param bool $nullifnone If true and the user has no grade then a grade item with rawgrade == null will be inserted
  */
-function qcreate_update_grades($qcreate=null, $userid=0) {
+function qcreate_update_grades($qcreate=null, $userid=0, $nullifnone = true) {
     global $CFG, $DB;
     require_once($CFG->libdir . '/gradelib.php');
 
     if ($qcreate != null) {
-        if ($gradesbyuserids = qcreate_get_user_grades($qcreate, $userid)) {
-            foreach ($gradesbyuserids as $userid => $gradesbyuserid) {
-                qcreate_grade_item_update($qcreate);
-                grade_update('mod/qcreate', $qcreate->course, 'mod', 'qcreate', $qcreate->id, 0, $gradesbyuserid);
-            }
+        if ($qcreate->grade == 0) {
+            qcreate_grade_item_update($qcreate);
+        } else if ($grades = qcreate_get_user_grades($qcreate, $userid)) {
+            qcreate_grade_item_update($qcreate, $grades);
+
+        } else if ($userid && $nullifnone) {
+            $grade = new stdClass();
+            $grade->userid = $userid;
+            $grade->rawgrade = null;
+            qcreate_grade_item_update($qcreate, $grade);
+
+        } else {
+            qcreate_grade_item_update($qcreate);
         }
     } else {
         $sql = "SELECT q.*, cm.id as cmidnumber, q.course as courseid
@@ -1102,6 +1147,9 @@ function qcreate_update_grades($qcreate=null, $userid=0) {
  */
 function qcreate_get_user_grades($qcreate, $userid=0) {
     global $DB;
+    
+    $cm = get_coursemodule_from_instance('qcreate', $qcreate->id, 0, false, MUST_EXIST);
+    $context = context_module::instance($cm->id);
     if (is_array($userid)) {
         $user = "u.id IN (".implode(',', $userid).") AND";
     } else if ($userid) {
@@ -1109,12 +1157,12 @@ function qcreate_get_user_grades($qcreate, $userid=0) {
     } else {
         $user = '';
     }
-    $modulecontext = context_module::instance($qcreate->cmidnumber);
+
     $sql = "SELECT q.id, u.id AS userid, g.grade AS rawgrade, g.gradecomment AS feedback,
             g.teacher AS usermodified, q.qtype AS qtype
             FROM {user} u, {question_categories} qc, {question} q
             LEFT JOIN {qcreate_grades} g ON g.questionid = q.id
-            WHERE $user u.id = q.createdby AND qc.id = q. category AND qc.contextid={$modulecontext->id}
+            WHERE $user u.id = q.createdby AND qc.id = q. category AND qc.contextid={$context->id}
             ORDER BY rawgrade DESC";
     $localgrades = $DB->get_records_sql($sql);
 
@@ -1249,6 +1297,34 @@ function qcreate_extend_settings_navigation(settings_navigation $settingsnav, na
     }
 }
 
+/**
+ * Callback which returns human-readable strings describing the active completion custom rules for the module instance.
+ *
+ * @param cm_info|stdClass $cm object with fields ->completion and ->customdata['customcompletionrules']
+ * @return array $descriptions the array of descriptions for the custom rules.
+ */
+function mod_qcreate_get_completion_active_rule_descriptions($cm) {
+    // Values will be present in cm_info, and we assume these are up to date.
+    if (empty($cm->customdata['customcompletionrules'])
+        || $cm->completion != COMPLETION_TRACKING_AUTOMATIC) {
+        return [];
+    }
+
+    $descriptions = [];
+    foreach ($cm->customdata['customcompletionrules'] as $key => $val) {
+        switch ($key) {
+            case 'completionquestions':
+                if (empty($val)) {
+                    continue;
+                }
+                $descriptions[] = get_string('completionquesttionsdesc', 'qcreate', $val);
+                break;
+            default:
+                break;
+        }
+    }
+    return $descriptions;
+}
 /**
  * Serves the files from the qcreate file areas
  *
@@ -1444,4 +1520,212 @@ function qcreate_time_status($qcreate) {
         }
     }
     return $string;
+}
+
+/**
+ * Check if the module has any update that affects the current user since a given time.
+ *
+ * @param  cm_info $cm course module data
+ * @param  int $from the time to check updates from
+ * @param  array $filter  if we need to check only specific updates
+ * @return stdClass an object with the different type of areas indicating if they were updated or not
+ * @since Moodle 3.2
+ */
+function qcreate_check_updates_since(cm_info $cm, $from, $filter = array()) {
+    global $DB, $USER, $CFG;
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+
+    $updates = course_check_module_updates_since($cm, $from, array(), $filter);
+
+    // Check if questions have been modified.
+    
+    // Check for new grades.
+    $updates->grades = (object) array('updated' => false);
+    // TODO : comment restreindre à l'utilisateur.
+    $select = 'qcreateid = ? AND timemarked > ?';
+    $params = array($cm->instance, $USER->id, $from);
+    $grades = $DB->get_records_select('qcreate_grades', $select, $params, '', 'id');
+    if (!empty($grades)) {
+        $updates->grades->updated = true;
+        $updates->grades->itemids = array_keys($grades);
+    }
+
+    return $updates;
+}
+
+
+/**
+ * This function receives a calendar event and returns the action associated with it, or null if there is none.
+ *
+ * This is used by block_myoverview in order to display the event appropriately. If null is returned then the event
+ * is not displayed on the block.
+ *
+ * @param calendar_event $event
+ * @param \core_calendar\action_factory $factory
+ * @return \core_calendar\local\event\entities\action_interface|null
+ */
+function mod_qcreate_core_calendar_provide_event_action(calendar_event $event,
+                                                       \core_calendar\action_factory $factory) {
+
+    global $CFG, $USER;
+
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+
+    $cm = get_fast_modinfo($event->courseid)->instances['qcreate'][$event->instance];
+    $context = context_module::instance($cm->id);
+    $qcreateobj = new qcreate($context, $cm, null);
+
+    // Check they have capabilities allowing them to view the qcreate.
+    if (!has_any_capability(array('mod/qcreate:view', 'mod/qcreate:submit'), $qcreateobj->get_context())) {
+        return null;
+    }
+
+    // Check if qcreate is closed, if so don't display it.
+    if (!empty($qcreate->timeclose) && $qcreate->timeclose <= time()) {
+        return null;
+    }
+
+    $name = get_string('attemptqcreatenow', 'qcreate');
+    $url = new \moodle_url('/mod/qcreate/view.php', [
+        'id' => $cm->id
+    ]);
+    $itemcount = 1;
+    $actionable = true;
+
+    // Check if the qcreate is not currently actionable.
+    if (!empty($qcreate->timeopen) && $qcreate->timeopen > time()) {
+        $actionable = false;
+    }
+
+    return $factory->create_instance(
+        $name,
+        $url,
+        $itemcount,
+        $actionable
+    );
+}
+
+/**
+ * This function calculates the minimum and maximum cutoff values for the timestart of
+ * the given event.
+ *
+ * It will return an array with two values, the first being the minimum cutoff value and
+ * the second being the maximum cutoff value. Either or both values can be null, which
+ * indicates there is no minimum or maximum, respectively.
+ *
+ * If a cutoff is required then the function must return an array containing the cutoff
+ * timestamp and error string to display to the user if the cutoff value is violated.
+ *
+ * A minimum and maximum cutoff return value will look like:
+ * [
+ *     [1505704373, 'The due date must be after the sbumission start date'],
+ *     [1506741172, 'The due date must be before the cutoff date']
+ * ]
+ *
+ * If the event does not have a valid timestart range then [false, false] will
+ * be returned.
+ *
+ * @param calendar_event $event The calendar event to get the time range for
+ * @param stdClass $instance The module instance to get the range from
+ * @return array
+ */
+function mod_qcreate_core_calendar_get_valid_event_timestart_range(\calendar_event $event, \stdClass $qcreate) {
+    global $CFG, $DB;
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+
+    $mindate = null;
+    $maxdate = null;
+
+    if ($event->eventtype == QCREATE_EVENT_TYPE_OPEN) {
+        if (!empty($qcreate->timeclose)) {
+            $maxdate = [
+                $qcreate->timeclose,
+                get_string('openafterclose', 'qcreate')
+            ];
+        }
+    } else if ($event->eventtype == QCREATE_EVENT_TYPE_CLOSE) {
+        if (!empty($qcreate->timeopen)) {
+            $mindate = [
+                $qcreate->timeopen,
+                get_string('closebeforeopen', 'qcreate')
+            ];
+        }
+    }
+
+    return [$mindate, $maxdate];
+}
+/**
+ * This function will update the qcreate module according to the
+ * event that has been modified.
+ *
+ * @throws \moodle_exception
+ * @param \calendar_event $event
+ * @param stdClass $instance The module instance to get the range from
+ */
+function mod_qcreate_core_calendar_event_timestart_updated(\calendar_event $event, \stdClass $qcreate) {
+    global $CFG, $DB;
+
+    require_once($CFG->dirroot . '/mod/qcreate/locallib.php');
+    if (!in_array($event->eventtype, [QCREATE_EVENT_TYPE_OPEN, QCREATE_EVENT_TYPE_CLOSE])) {
+        // This isn't an event that we care about so we can ignore it.
+        return;
+    }
+
+    $courseid = $event->courseid;
+    $modulename = $event->modulename;
+    $instanceid = $event->instance;
+    $modified = false;
+    $closedatechanged = false;
+
+    // Something weird going on. The event is for a different module so
+    // we should ignore it.
+    if ($modulename != 'qcreate') {
+        return;
+    }
+
+    if ($qcreate->id != $instanceid) {
+        // The provided qcreate instance doesn't match the event so
+        // there is nothing to do here.
+        return;
+    }
+
+
+    $coursemodule = get_fast_modinfo($courseid)->instances[$modulename][$instanceid];
+    $context = context_module::instance($coursemodule->id);
+
+    // The user does not have the capability to modify this activity.
+    if (!has_capability('moodle/course:manageactivities', $context)) {
+        return;
+    }
+
+    $qcreateobj = new qcreate($context, $coursemodule, null);
+    $qcreateobj->set_instance($instance);
+
+     if ($event->eventtype == QCREATE_EVENT_TYPE_OPEN) {
+        // If the event is for the qcreate activity opening then we should
+        // set the start time of the qcreate activity to be the new start
+        // time of the event.
+        if ($qcreateobj->timeopen != $event->timestart) {
+            $qcreateobj->timeopen = $event->timestart;
+            $modified = true;
+        }
+    } else if ($event->eventtype == QCREATE_EVENT_TYPE_CLOSE) {
+        // If the event is for the qcreate activity closing then we should
+        // set the end time of the qcreate activity to be the new start
+        // time of the event.
+        if ($qcreateobj->timeclose != $event->timestart) {
+            $qcreateobj->timeclose = $event->timestart;
+            $modified = true;
+            $closedatechanged = true;
+        }
+    }
+
+    if ($modified) {
+        $qcreate->timemodified = time();
+        $DB->update_record('qcreate', $qcreateobj);
+
+        qcreate_update_events($qcreateobj);
+        $event = \core\event\course_module_updated::create_from_cm($coursemodule, $context);
+        $event->trigger();
+    }
 }

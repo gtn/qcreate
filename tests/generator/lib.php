@@ -17,7 +17,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Quiz module test data generator class
+ * Question creation module test data generator class
  *
  * @package mod_qcreate
  * @copyright 2014 Jean-Michel Vedrine

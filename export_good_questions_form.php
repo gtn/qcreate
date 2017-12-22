@@ -24,6 +24,8 @@
 
 require_once($CFG->dirroot . '/question/export_form.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 class qcreate_export_good_questions_form extends question_export_form {
     protected function definition() {
         $mform    =& $this->_form;

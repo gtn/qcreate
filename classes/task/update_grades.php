@@ -23,6 +23,8 @@
  */
 namespace mod_qcreate\task;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Task to update grades for each qcreate instance.
  */
@@ -77,6 +79,7 @@ class update_grades extends \core\task\scheduled_task {
                 }
             }
         }
+        $qcreates->close();
     }
 
 }

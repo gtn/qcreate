@@ -18,6 +18,7 @@ require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->dirroot . '/mod/qcreate/renderable.php');
 
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Standard base class for mod_qcreate.
@@ -394,7 +395,6 @@ class qcreate {
 
         // Special case for add_instance as the coursemodule has not been set yet.
         $instance = $this->get_instance();
-
         // Load the old events relating to this qcreate.
         $conds = array('modulename' => 'qcreate',
                        'instance' => $instance->id);
@@ -402,18 +402,19 @@ class qcreate {
 
         $cm = get_coursemodule_from_instance('qcreate', $instance->id);
 
-        $event = new stdClass;
-        $event->name = $instance->name;
-        $event->description = format_module_intro('qcreate', $instance, $cm->id);
-        $event->courseid    = $instance->course;
-        $event->groupid     = 0;
-        $event->userid      = 0;
+        // Start with creating the event.
+        $event = new stdClass();
         $event->modulename  = 'qcreate';
-        $event->instance    = $instance->id;
+        $event->courseid = $instance->course;
+        $event->description = format_module_intro('qcreate', $instance, $cm->id);
+        $event->groupid = 0;
+        $event->userid  = 0;
+        $event->instance  = $instance->id;
+        $event->type = CALENDAR_EVENT_TYPE_ACTION;
         $event->timestart   = $instance->timeopen;
         $event->timeduration = $instance->timeclose - $instance->timeopen;
         $event->visible     = instance_is_visible('qcreate', $instance);
-        $event->eventtype   = 'open';
+        $event->eventtype   = QCREATE_EVENT_TYPE_OPEN;
 
         if ($instance->timeclose and $instance->timeopen and $event->timeduration <= QCREATE_MAX_EVENT_LENGTH) {
             // Single event for the whole qcreate.
@@ -433,7 +434,7 @@ class qcreate {
                 } else {
                     unset($event->id);
                 }
-                $event->name = $instance->name.' ('.get_string('qcreateopens', 'qcreate').')';
+                $event->name = get_string('qcreateeventopens', 'qcreate', $instance->name);
                 calendar_event::create($event);
             }
             if ($instance->timeclose) {
@@ -442,9 +443,9 @@ class qcreate {
                 } else {
                     unset($event->id);
                 }
-                $event->name      = $instance->name.' ('.get_string('qcreatecloses', 'qcreate').')';
+                $event->name      = get_string('qcreateeventcloses', 'qcreate', $instance->name);
                 $event->timestart = $instance->timeclose;
-                $event->eventtype = 'close';
+                $event->eventtype = QCREATE_EVENT_TYPE_CLOSE;
                 calendar_event::create($event);
             }
         }
@@ -1523,7 +1524,8 @@ class qcreate {
                                                                $qcreatename);
         }
 
-        $eventdata = new stdClass();
+        $eventdata = new \core\message\message();
+        $eventdata->courseid         = $course->id;
         $eventdata->modulename       = 'qcreate';
         $eventdata->userfrom         = $userfrom;
         $eventdata->userto           = $userto;
@@ -1693,16 +1695,16 @@ function qcreate_question_action_icons($cmid, $question, $returnurl) {
  * @param int $cmid the course_module.id for this qcreate.
  * @param object $question the question.
  * @param string $returnurl url to return to after action is done.
+ * @param string $contentaftericon some HTML content to be added inside the link, after the icon.
  * @return the HTML for an edit icon, view icon, or nothing for a question
  *      (depending on permissions).
  */
-function qcreate_question_edit_button($cmid, $question, $returnurl) {
+function qcreate_question_edit_button($cmid, $question, $returnurl, $contentaftericon = '') {
     global $CFG, $OUTPUT;
 
     // Minor efficiency saving. Only get strings once, even if there are a lot of icons on one page.
     static $stredit = null;
     static $strview = null;
-
     if ($stredit === null) {
         $stredit = get_string('edit');
         $strview = get_string('view');
@@ -1714,11 +1716,11 @@ function qcreate_question_edit_button($cmid, $question, $returnurl) {
             (question_has_capability_on($question, 'edit', $question->category) ||
                     question_has_capability_on($question, 'move', $question->category))) {
         $action = $stredit;
-        $icon = '/t/edit';
+        $icon = 't/edit';
     } else if (!empty($question->id) &&
             question_has_capability_on($question, 'view', $question->category)) {
         $action = $strview;
-        $icon = '/i/info';
+        $icon = 'i/info';
     }
 
     // Build the icon.
@@ -1728,12 +1730,16 @@ function qcreate_question_edit_button($cmid, $question, $returnurl) {
         }
         $questionparams = array('returnurl' => $returnurl, 'cmid' => $cmid, 'id' => $question->id);
         $questionurl = new moodle_url("$CFG->wwwroot/question/question.php", $questionparams);
-        return '<a title="' . $action . '" href="' . $questionurl->out() . '" class="iconsmall"><img src="' .
-                $OUTPUT->pix_url($icon) . '" alt="' . $action . '" /></a>';
+        return '<a title="' . $action . '" href="' . $questionurl->out() . '" class="questioneditbutton">' .
+                $OUTPUT->pix_icon($icon, $action) . $contentaftericon .
+                '</a>';
+    } else if ($contentaftericon) {
+        return '<span class="questioneditbutton">' . $contentaftericon . '</span>';
     } else {
         return '';
     }
 }
+
 
 /**
  * @param int $cmid the course_module.id for this qcreate.
@@ -1758,8 +1764,8 @@ function qcreate_question_delete_button($cmid, $question, $returnurl) {
         $action = $strdelete;
         $icon = 't/delete';
 
-        return '<a title="' . $action . '" href="' . $returnurl . '&amp;delete=' . $question->id. '" class="iconsmall"><img src="' .
-                $OUTPUT->pix_url($icon) . '" alt="' . $action . '" /></a>';
+        return '<a title="' . $action . '" href="' . $returnurl . '&amp;delete=' . $question->id. '" class="iconsmall">'.
+                $OUTPUT->pix_icon($icon, $action) . '</a>';
     } else {
         return '';
     }

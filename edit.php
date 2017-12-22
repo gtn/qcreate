@@ -329,8 +329,8 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
         if (question_has_capability_on($answer->qid, 'use')) {
 
             $link = new moodle_url('/question/preview.php?id=' . $answer->qid . '&amp;courseid=' .$COURSE->id);
-            $colquestion .= $OUTPUT->action_link($link, "<img src=\""
-                    .$OUTPUT->pix_url('t/preview')."\" class=\"iconsmall\" alt=\"$strpreview\" />",
+            $image = $OUTPUT->pix_icon('t/preview', $strpreview);
+            $colquestion .= $OUTPUT->action_link($link, $image,
                     new popup_action ('click', $link, 'questionpreview', question_preview_popup_params()));
         }
 

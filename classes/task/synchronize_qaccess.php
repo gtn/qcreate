@@ -23,6 +23,8 @@
  */
 namespace mod_qcreate\task;
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * Synchronize students capabilites on questions for each instance of qcreate.
  */
@@ -56,6 +58,7 @@ class synchronize_qaccess extends \core\task\scheduled_task {
                 qcreate_student_q_access_sync($context, $qcreate, false);
             }
         }
+        $qcreates->close();
     }
 
 }

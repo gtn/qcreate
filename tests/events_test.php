@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Quiz events tests.
+ * Question creation events tests.
  *
  * @package    mod_qcreate
  * @category   phpunit
