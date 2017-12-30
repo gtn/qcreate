@@ -51,7 +51,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
         // Adding the "general" fieldset, where all the common settings are showed.
         $mform->addElement('header', 'general', get_string('general', 'form'));
         // Adding the standard "name" field.
-        $mform->addElement('text', 'name', get_string('name'), array('size'=>'64'));
+        $mform->addElement('text', 'name', get_string('name'), array('size' => '64'));
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
         } else {
@@ -184,8 +184,8 @@ class mod_qcreate_mod_form extends moodleform_mod {
         // Set up the completion checkboxes which aren't part of standard data.
         // We also make the default value (if you turn on the checkbox) for those
         // numbers to be 1, this will not apply unless checkbox is ticked.
-        $defaultvalues['completionquestionsenabled'] =
-            !empty($defaultvalues['completionquestions']) ? 1 : 0;
+        $defaultvalues['completionquestionsenabled']
+                = !empty($defaultvalues['completionquestions']) ? 1 : 0;
         if (empty($defaultvalues['completionquestions'])) {
             $defaultvalues['completionquestions'] = 1;
         }
@@ -270,7 +270,7 @@ class mod_qcreate_mod_form extends moodleform_mod {
      */
     public function data_postprocessing($data) {
         parent::data_postprocessing($data);
-        // Set up completion section even if checkbox is not ticked
+        // Set up completion section even if checkbox is not ticked.
         if (!empty($data->completionunlocked)) {
              // Turn off completion settings if the checkboxes aren't ticked.
             $autocompletion = !empty($data->completion) && $data->completion == COMPLETION_TRACKING_AUTOMATIC;

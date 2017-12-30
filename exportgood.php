@@ -27,8 +27,8 @@ require_once(dirname(__FILE__) . '/../../config.php');
 require_once($CFG->dirroot . '/question/editlib.php');
 require_once($CFG->dirroot . '/mod/qcreate/export_good_questions_form.php');
 
-list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) =
-        question_edit_setup('export', '/mod/qcreate/exportgood.php', true);
+list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars)
+        = question_edit_setup('export', '/mod/qcreate/exportgood.php', true);
 $qcreate->cmidnumber = $cm->id;
 
 if (!has_capability('moodle/question:viewmine', $contexts->lowest())

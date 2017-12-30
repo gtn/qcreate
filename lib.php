@@ -1237,8 +1237,8 @@ function qcreate_grade_aggregate($gradesforuser, $qcreate) {
 
     $totalrequireddone = $qcreate->totalrequired - $counttotalrequired;
 
-    $aggregated->rawgrade = $aggregated->rawgrade * ((100 - $qcreate->graderatio) / 100) +
-                 (($totalrequireddone * $qcreate->grade / $qcreate->totalrequired) * ($qcreate->graderatio / 100));
+    $aggregated->rawgrade = $aggregated->rawgrade * ((100 - $qcreate->graderatio) / 100)
+            + (($totalrequireddone * $qcreate->grade / $qcreate->totalrequired) * ($qcreate->graderatio / 100));
 
     return $aggregated;
 }
@@ -1539,7 +1539,7 @@ function qcreate_check_updates_since(cm_info $cm, $from, $filter = array()) {
     $updates = course_check_module_updates_since($cm, $from, array(), $filter);
 
     // Check if questions have been modified.
-    
+
     // Check for new grades.
     $updates->grades = (object) array('updated' => false);
     // TODO : comment restreindre à l'utilisateur.
@@ -1553,7 +1553,6 @@ function qcreate_check_updates_since(cm_info $cm, $from, $filter = array()) {
 
     return $updates;
 }
-
 
 /**
  * This function receives a calendar event and returns the action associated with it, or null if there is none.
@@ -1690,7 +1689,6 @@ function mod_qcreate_core_calendar_event_timestart_updated(\calendar_event $even
         return;
     }
 
-
     $coursemodule = get_fast_modinfo($courseid)->instances[$modulename][$instanceid];
     $context = context_module::instance($coursemodule->id);
 
@@ -1702,7 +1700,7 @@ function mod_qcreate_core_calendar_event_timestart_updated(\calendar_event $even
     $qcreateobj = new qcreate($context, $coursemodule, null);
     $qcreateobj->set_instance($instance);
 
-     if ($event->eventtype == QCREATE_EVENT_TYPE_OPEN) {
+    if ($event->eventtype == QCREATE_EVENT_TYPE_OPEN) {
         // If the event is for the qcreate activity opening then we should
         // set the start time of the qcreate activity to be the new start
         // time of the event.

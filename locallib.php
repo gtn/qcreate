@@ -1084,10 +1084,10 @@ class qcreate {
                 $i = 1;
                 $qtyperequired += $required->no;
                 if (!empty($qtypeqs[$qtype])) {
-                    $instance->requiredqtypes[$qtype]->done =
-                            (count($qtypeqs[$qtype]) > $required->no) ? $required->no : count($qtypeqs[$qtype]);
-                    $instance->requiredqtypes[$qtype]->stillrequiredno =
-                            $instance->requiredqtypes[$qtype]->no - $instance->requiredqtypes[$qtype]->done;
+                    $instance->requiredqtypes[$qtype]->done
+                            = (count($qtypeqs[$qtype]) > $required->no) ? $required->no : count($qtypeqs[$qtype]);
+                    $instance->requiredqtypes[$qtype]->stillrequiredno
+                            = $instance->requiredqtypes[$qtype]->no - $instance->requiredqtypes[$qtype]->done;
                     while (($i <= $required->no) && ($qtypeq = array_shift($qtypeqs[$qtype]))) {
                         $requiredquestions[$qtype][] = $qtypeq;
                         $i++;
@@ -1137,8 +1137,8 @@ class qcreate {
             $studentgrade->fullgrade = $fullgrade;
             if (!empty($this->get_instance()->graderatio)) {
                 $automaticgrade = new stdClass();
-                $automaticquestiongrade = $gradinginfo->items[0]->grademax * ($this->get_instance()->graderatio / 100) /
-                       $this->get_instance()->totalrequired;
+                $automaticquestiongrade = $gradinginfo->items[0]->grademax * ($this->get_instance()->graderatio / 100)
+                       / $this->get_instance()->totalrequired;
                 $automaticgrade->outof = $gradinginfo->items[0]->grademax * ($this->get_instance()->graderatio / 100);
                 $automaticgrade->done = ($extraquestionsdone + $qtypedone);
                 $automaticgrade->required = $this->get_instance()->totalrequired;
