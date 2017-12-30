@@ -60,19 +60,19 @@ class mod_qcreate_lib_testcase extends mod_qcreate_base_testcase {
         // Check the overview as the different users.
         $overview = array();
         qcreate_print_overview($courses, $overview);
-        $this->assertDebuggingCalled();
+        $this->assertDebuggingCalledCount(2);
         $this->assertEquals(count($overview), 1);
 
         $this->setUser($this->teachers[0]);
         $overview = array();
         qcreate_print_overview($courses, $overview);
-        $this->assertDebuggingCalled();
+        $this->assertDebuggingCalledCount(2);
         $this->assertEquals(count($overview), 1);
 
         $this->setUser($this->editingteachers[0]);
         $overview = array();
         qcreate_print_overview($courses, $overview);
-        $this->assertDebuggingCalled();
+        $this->assertDebuggingCalledCount(2);
         $this->assertEquals(1, count($overview));
     }
 
