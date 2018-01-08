@@ -51,7 +51,7 @@ Feature: Test creating a question in a qcreate activity
       | id_fraction_4            | 50%                                |
       | Hint 1                   | First hint                         |
       | Hint 2                   | Second hint                        |
-    And I press "Save changes"
+    And I press "id_submitbutton"
     Then I should see "You've done one extra question."
     And I should see "2 questions of any of the types below will be graded"
     And I should see "Multi-choice-001 (Not graded yet)"
