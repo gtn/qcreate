@@ -11,6 +11,9 @@ Feature: Backup and Restore of Question creation activities
     And the following "users" exist:
       | username | firstname | lastname | email                |
       | teacher1 | Terry1    | Teacher1 | teacher1@example.com |
+    And the following "course enrolments" exist:
+      | user | course | role |
+      | teacher1 | C1 | editingteacher |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
     And I add a "Question Creation" to section "1" and I fill the form with:
