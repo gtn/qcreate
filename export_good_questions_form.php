@@ -22,9 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
 
-require_once($CFG->dirroot . '/question/export_form.php');
-
 defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/question/export_form.php');
 
 class qcreate_export_good_questions_form extends question_export_form {
     protected function definition() {

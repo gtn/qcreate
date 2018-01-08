@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->dirroot . '/mod/qcreate/renderable.php');
-
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Standard base class for mod_qcreate.

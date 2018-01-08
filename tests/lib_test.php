@@ -38,15 +38,13 @@ require_once($CFG->dirroot . '/mod/qcreate/tests/base_test.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_qcreate_lib_testcase extends mod_qcreate_base_testcase {
-    
-// phpcs:disable
+
     protected function setUp() {
         parent::setUp();
 
         // Add additional default data.
 
     }
-// phpcs:enable
 
     public function test_qcreate_print_overview() {
         global $DB;
