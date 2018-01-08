@@ -33,6 +33,7 @@ Feature: Test creating a question in a qcreate activity
     And I am on "Course 1" course homepage
     And I follow "Question Creation 001"
     And I follow "Multiple choice"
+    And I should see "Default for Question Creation 001"
     And I set the following fields to these values:
       | Question name            | Multi-choice-001                   |
       | Question text            | Find the capital cities in Europe. |
@@ -52,7 +53,7 @@ Feature: Test creating a question in a qcreate activity
       | Hint 2                   | Second hint                        |
     And I press "Save changes"
     Then I should see "You've done one extra question."
-    And I should see "One question of any of the types below will be graded"
+    And I should see "2 questions of any of the types below will be graded"
     And I should see "Multi-choice-001 (Not graded yet)"
     And I should see "You have been awarded a total grade of 50 / 100 for this activity."
     And I should see "A teacher has awarded you a grade of 0 / 50 for the questions you have done."
