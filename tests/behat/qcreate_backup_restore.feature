@@ -10,13 +10,16 @@ Feature: Backup and Restore of Question creation activities
       | Course 1 | C1        | 0        |
     And the following "users" exist:
       | username | firstname | lastname | email                |
-      | student1 | Sam1      | Student1 | student1@example.com |
-    And I log in as "admin"
+      | teacher1 | Terry1    | Teacher1 | teacher1@example.com |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
     And I add a "Question Creation" to section "1" and I fill the form with:
       | Name             | Question Creation 001          |
       | Description      | Question Creation description  |
+    And I log out
+    And I log in as "admin"
+    And I am on "Course 1" course homepage
+    
   Scenario: Backup and restore  in a new course
     When I backup "Course 1" course using this options:
       | Confirmation | Filename | test_backup.mbz |
