@@ -31,4 +31,3 @@ Feature: Backup and Restore of Question creation activities
       | Schema | Course name | Course 2 |
     Then I should see "Course 2"
     And I should see "Question Creation 001"
-
