@@ -22,7 +22,8 @@ Feature: Backup and Restore of Question creation activities
     And I log out
     And I log in as "admin"
     And I am on "Course 1" course homepage
-    
+
+  @javascript
   Scenario: Backup and restore  in a new course
     When I backup "Course 1" course using this options:
       | Confirmation | Filename | test_backup.mbz |

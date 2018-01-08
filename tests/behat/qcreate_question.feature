@@ -25,6 +25,8 @@ Feature: Test creating a question in a qcreate activity
       | Name             | Question Creation 001          |
       | Description      | Question Creation description  |
     And I log out
+    # We need to run the task tu update students 
+    And I run the scheduled task "qcreate\task\synchronize_qaccess"
     And I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Question Creation 001"
