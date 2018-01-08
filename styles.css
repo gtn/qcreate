@@ -1,8 +1,12 @@
-ul#requiredqlist li { font-weight:bold }
+ul#requiredqlist li {
+    font-weight: bold;
+}
 
-ul#requiredqlist ul li { font-weight:normal }
+ul#requiredqlist ul li {
+    font-weight: normal;
+}
 
 table#mod-qcreate-grades {
     border-spacing: 0;
-    width:100%;
+    width: 100%;
 }
