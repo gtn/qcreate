@@ -1237,8 +1237,8 @@ function qcreate_grade_aggregate($gradesforuser, $qcreate) {
 
     $totalrequireddone = $qcreate->totalrequired - $counttotalrequired;
 
-    $aggregated->rawgrade = $aggregated->rawgrade * ((100 - $qcreate->graderatio) / 100)
-            + (($totalrequireddone * $qcreate->grade / $qcreate->totalrequired) * ($qcreate->graderatio / 100));
+    $aggregated->rawgrade = $aggregated->rawgrade * ((100 - $qcreate->graderatio) / 100) + (
+            ($totalrequireddone * $qcreate->grade / $qcreate->totalrequired) * ($qcreate->graderatio / 100));
 
     return $aggregated;
 }
