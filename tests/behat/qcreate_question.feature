@@ -22,8 +22,10 @@ Feature: Test creating a question in a qcreate activity
     When I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
     And I add a "Question Creation" to section "1" and I fill the form with:
-      | Name             | Question Creation 001          |
-      | Description      | Question Creation description  |
+      | Name                    | Question Creation 001          |
+      | Description             | Question Creation description  |
+      | To own questions        | preview                        |
+      | Total Questions Graded  | 2                              |
     And I log out
     # We need to run the task to update students capabilities on questions
     And I run the scheduled task "mod_qcreate\task\synchronize_qaccess"
