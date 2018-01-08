@@ -1,4 +1,4 @@
-@mod @qtype_algebra
+@mod @mod_qcreate
 Feature: Test creating a question in a qcreate activity
   As a student
   In order to get a grade in a Question creation activity
