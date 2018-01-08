@@ -223,10 +223,7 @@ class mod_qcreate_locallib_testcase extends mod_qcreate_base_testcase {
 
         // Create a qcreate with no groups.
         $qcreate = $this->create_instance();
-        $this->assertCount(self::DEFAULT_TEACHER_COUNT
-                + self::DEFAULT_EDITING_TEACHER_COUNT
-                + self::EXTRA_TEACHER_COUNT
-                + self::EXTRA_EDITING_TEACHER_COUNT,
+        $this->assertCount(self::DEFAULT_TEACHER_COUNT + self::DEFAULT_EDITING_TEACHER_COUNT + self::EXTRA_TEACHER_COUNT + self::EXTRA_EDITING_TEACHER_COUNT,
                 $qcreate->testable_get_graders($this->students[0]->id));
 
         // Force create a qcreate with SEPARATEGROUPS.

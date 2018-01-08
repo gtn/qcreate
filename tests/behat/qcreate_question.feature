@@ -31,10 +31,7 @@ Feature: Test creating a question in a qcreate activity
     And I run the scheduled task "mod_qcreate\task\synchronize_qaccess"
     And I log in as "student1"
     And I am on "Course 1" course homepage
-    And I follow "Question Creation 001"
-    And I follow "Multiple choice"
-    And I should see "Default for Question Creation 001"
-    And I set the following fields to these values:
+    And I add a "Multiple choice" question to the "Question Creation 001" qcreate with:
       | Question name            | Multi-choice-001                   |
       | Question text            | Find the capital cities in Europe. |
       | General feedback         | Paris and London                   |
@@ -51,7 +48,6 @@ Feature: Test creating a question in a qcreate activity
       | id_fraction_4            | 50%                                |
       | Hint 1                   | First hint                         |
       | Hint 2                   | Second hint                        |
-    And I press "id_submitbutton"
     Then I should see "You've done one extra question."
     And I should see "2 questions of any of the types below will be graded"
     And I should see "Multi-choice-001"
