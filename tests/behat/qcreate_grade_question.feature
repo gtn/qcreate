@@ -18,7 +18,7 @@ Feature: Test creating a question in a qcreate activity
       | student1 | C1 | student |
 
   @javascript @_switch_window
-  Scenario: Student create a Multiple choice question
+  Scenario: Teacher grade student question
     When I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
     And I add a "Question Creation" to section "1" and I fill the form with:
@@ -48,6 +48,7 @@ Feature: Test creating a question in a qcreate activity
       | id_fraction_4            | 50%                                |
     And I log out
     And I log in as "teacher1"
+    And I am on "Course 1" course homepage
     And I follow "Question Creation 001"
     Then I should see "student1"
     And I should see "Multi-choice-001"
