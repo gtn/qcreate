@@ -206,3 +206,5 @@ $string['youhavedone'] = 'You have created {$a} question(s).';
 $string['updategradestask'] = 'Update question creation activity grades';
 $string['username'] = 'User name of creator of question';
 $string['youvesetmorethanonemin'] = 'You\'ve set more than one minimum number of questions for question type \'{$a}\'!';
+$string['questiongrade'] = 'Question grade';
+$string['gradecomment'] = 'Grade comment';

@@ -50,6 +50,7 @@ Feature: Test creating a question in a qcreate activity
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Question Creation 001"
-    Then I should see "student1"
+    Then I should see "Student 1"
     And I should see "Multi-choice-001"
-    And I should see "Needs grading"
+    And "Multi-choice-001" row "Status" column of "attempts" table should contain "Needs grading"
+

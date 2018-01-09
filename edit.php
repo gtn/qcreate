@@ -358,7 +358,6 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
         }
         if (!empty($answer->gradeid)) {
             // Prints student answer and student modified date
-            // attach file or print link to student answer, depending on the type of the assignment.
             // Refer to print_student_answer in inherited classes.
 
             // Print grade, dropdown or text.
@@ -368,9 +367,13 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                     $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
                 } else {
-                    $menu = html_writer::select(make_grades_menu($qcreate->grade),
+                    $menu = html_writer::select($grademenu,
                             'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')));
-                    $grade = '<div id="g'.$answer->qid.'">'. $menu .'</div>';
+                    $grade = '<div id="g'.$answer->qid.'">'
+                            .'<label class="accesshide"
+                            for="menumenu' .$answer->qid . '">'
+                            .get_string('questiongrade', 'qcreate') .
+                            '</label>'. $menu .'</div>';
                 }
 
             } else {
@@ -378,9 +381,13 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                     $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
                 } else {
-                    $menu = html_writer::select(make_grades_menu($qcreate->grade),
+                    $menu = html_writer::select($grademenu,
                             'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')));
-                    $grade = '<div id="g'.$answer->qid.'">'.$menu.'</div>';
+                    $grade = '<div id="g'.$answer->qid.'">'
+                            .'<label class="accesshide"
+                            for="menumenu' .$answer->qid . '">'
+                            .get_string('questiongrade', 'qcreate') .
+                            '</label>'.$menu.'</div>';
                 }
             }
             // Print Comment.
@@ -389,8 +396,11 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
 
             } else {
                 $comment = '<div id="com'.$answer->qid.'">'
-                         . '<textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
-                         . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
+                        .'<label class="accesshide"
+                        for="gradecomment' . $answer->qid.'">'
+                        . get_string('gradecomment', 'qcreate')
+                        .'</label><textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
+                        . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
             }
         } else {
             $teachermodified = '<div id="tt'.$answer->qid.'">&nbsp;</div>';
@@ -399,16 +409,23 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
             if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                 $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
             } else {   // Allow editing.
-                $menu = html_writer::select(make_grades_menu($qcreate->grade),
+                $menu = html_writer::select($grademenu,
                        'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')));
-                $grade = '<div id="g'.$answer->qid.'">'.$menu.'</div>';
+                $grade = '<div id="g'.$answer->qid.'">'
+                        .'<label class="accesshide"
+                        for="menumenu' .$answer->qid . '">'
+                        .get_string('questiongrade', 'qcreate') .
+                        '</label>'.$menu.'</div>';
             }
 
             if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                 $comment = '<div id="com'.$answer->qid.'">'.$finalgradevalue->str_feedback.'</div>';
             } else {
                 $comment = '<div id="com'.$answer->qid.'">'
-                         . '<textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
+                        .'<label class="accesshide"
+                        for="gradecomment' . $answer->qid.'">'
+                        .get_string('gradecomment', 'qcreate')
+                        .'</label><textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
                          . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
             }
         }
