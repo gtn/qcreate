@@ -75,7 +75,6 @@ Feature: Test creating a question in a qcreate activity
     And I should see "A teacher has awarded you a grade of 0 / 50 for the questions you have done."
     And I click on "Preview" "link" in the "Multi-choice-002" "list_item"
     And I switch to "questionpreview" window
-    And the state of "Multi-choice-002" question is shown as "Not yet answered"
     And I should see "Marked out of 1.00"
     And I should see "Technical information"
     And I should see "Attempt options"
