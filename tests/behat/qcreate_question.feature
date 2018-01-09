@@ -73,7 +73,7 @@ Feature: Test creating a question in a qcreate activity
     And I should see "You have been awarded a total grade of 50 / 100 for this activity"
     And I should see "You have been awarded an automatic grade of 50 / 50 for these questions, since you have done 2 of 2 required questions."
     And I should see "A teacher has awarded you a grade of 0 / 50 for the questions you have done."
-    And I click on "Preview" "link" in the "Multi-choice-002" "table_row"
+    And I click on "Preview" "link" in the "Multi-choice-002" "list_item"
     And I switch to "questionpreview" window
     And the state of "Multi-choice-002" question is shown as "Not yet answered"
     And I should see "Marked out of 1.00"
