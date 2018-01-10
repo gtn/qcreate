@@ -17,11 +17,10 @@ Feature: Backup and Restore of Question creation activities
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
     And I add a "Question Creation" to section "1" and I fill the form with:
-      | Name             | Question Creation 001          |
-      | Description      | Question Creation description  |
+      | Name             | Question Creation 001           |
+      | Introduction     | Question Creation introduction  |
     And I log out
     And I log in as "admin"
-    And I am on "Course 1" course homepage
 
   @javascript
   Scenario: Backup and restore  in a new course
