@@ -1,5 +1,5 @@
 @mod @mod_qcreate
-Feature: Test creating a question in a qcreate activity
+Feature: Test grading a question in a qcreate activity
   As a teacher
   In order to evaluate my students in a Question creation activity
   I need to grade questions created by my students
@@ -52,5 +52,10 @@ Feature: Test creating a question in a qcreate activity
     And I follow "Question Creation 001"
     Then I should see "Student 1"
     And I should see "Multi-choice-001"
-    And "Multi-choice-001" row "Status" column of "attempts" table should contain "Needs grading"
-
+    And I set the field "Question grade" to "80 / 100"
+    And I set the field "Grade comment" to "Feedback from teacher."
+    And I press "Save all grades & feedback"
+    And I should see "Graded"
+    And I should see "Feedback from teacher."
+    And I should see "80 / 100"
+    And I should not see "Needs grading"
