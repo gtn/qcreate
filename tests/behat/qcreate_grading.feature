@@ -73,4 +73,4 @@ Feature: Test grading several questions in a qcreate activity
     Then I should see "Feedback from teacher."
     And I should see "80 / 100"
     And "Student 1" row "Status" column of "student_questions" table should contain "Graded"
-    And "Multi-choice-002" row "Status" column of "student_questions" table should contain "Needs grading"
+   #  And "Multi-choice-002" row "Status" column of "student_questions" table should contain "Needs grading"

@@ -1282,10 +1282,6 @@ function qcreate_extend_settings_navigation(settings_navigation $settingsnav, na
         $beforekey = $keys[$i + 1];
     }
     if (has_capability('mod/qcreate:grade', $PAGE->cm->context)) {
-        $node = navigation_node::create(get_string('overview', 'qcreate'),
-                new moodle_url('/mod/qcreate/overview.php', array('cmid' => $PAGE->cm->id)),
-                navigation_node::TYPE_SETTING, null, 'mod_qcreate_overview');
-        $qcreatenode->add_node($node, $beforekey);
         $node = navigation_node::create(get_string('grading', 'qcreate'),
                 new moodle_url('/mod/qcreate/edit.php', array('cmid' => $PAGE->cm->id)),
                 navigation_node::TYPE_SETTING, null, 'mod_qcreate_edit');
