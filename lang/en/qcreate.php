@@ -208,3 +208,4 @@ $string['username'] = 'User name of creator of question';
 $string['youvesetmorethanonemin'] = 'You\'ve set more than one minimum number of questions for question type \'{$a}\'!';
 $string['questiongrade'] = 'Question grade';
 $string['gradecomment'] = 'Grade comment';
+$string['viewgrading'] = 'Grade questions';

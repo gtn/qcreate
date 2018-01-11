@@ -64,6 +64,7 @@ Feature: Test grading several questions in a qcreate activity
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Question Creation 001"
+    And I navigate to "Grading" in current page administration
     And "Student 1" row "Status" column of "student_questions" table should contain "Needs grading"
     And I should see "Multi-choice-001"
     And I set the field "Question grade" to "80 / 100"

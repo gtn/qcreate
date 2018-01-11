@@ -322,7 +322,17 @@ class mod_qcreate_renderer extends plugin_renderer_base {
                 $o .= html_writer::end_tag('li');
             }
         }
+
         $o .= $this->output->box_end();
+
+        // Link to the grading page.
+        $o .= '<center>';
+        $o .= $this->output->container_start('gradinglink');
+        $urlparams = array('cmid' => $overview->coursemoduleid);
+        $url = new moodle_url('/mod/qcreate/edit.php', $urlparams);
+        $o .= '<a href="' . $url . '" class="btn btn-primary">' . get_string('viewgrading', 'mod_qcreate') . '</a> ';
+        $o .= $this->output->container_end();
+        $o .= '</center>';
         return $o;
     }
 

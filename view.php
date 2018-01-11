@@ -65,10 +65,11 @@ $modulecontext = context_module::instance($cm->id);
 if (!$cats = get_categories_for_contexts($modulecontext->id)) {
     debugging('default category not set', DEBUG_DEVELOPER);
 }
-
+/*
 if (has_capability('mod/qcreate:grade', $modulecontext)) {
     redirect($CFG->wwwroot.'/mod/qcreate/edit.php?cmid='.$cm->id);
-}
+}*/
+
 $qcreate->cmidnumber = $cm->id;
 
 $thisurl = new moodle_url('/mod/qcreate/view.php', array('id' => $cm->id));
@@ -80,50 +81,55 @@ qcreate_student_q_access_sync($modulecontext, $qcreateobj->get_instance());
 
 require_login($course, true, $cm);
 
-require_capability('mod/qcreate:view', $modulecontext);
+if (has_capability('mod/qcreate:grade', $modulecontext)) {
+    // Get the qcreate class to render the overview page.
+    echo $qcreateobj->view(optional_param('action', 'overview', PARAM_TEXT));
+} else {
+    require_capability('mod/qcreate:view', $modulecontext);
 
-// Update completion state.
-$completion = new completion_info($course);
-if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {
-    $completion->update_state($cm, COMPLETION_COMPLETE);
-}
-$completion->set_module_viewed($cm);
-
-if ($lastchanged &&($qaction == 'edit' || $qaction == 'add')) {
-    qcreate_update_grades($qcreate, $USER->id);
-    $params['cid'] = $qcreateobj->get_question_category()->id;
-    $params['lastchanged'] = $lastchanged;
-    if (!$question = $DB->get_record_select('question', "id = :lastchanged AND category = :cid", $params)) {
-        print_error('question_not_found');
-    } else {
-        $qcreateobj->notify_graders($question);
+    // Update completion state.
+    $completion = new completion_info($course);
+    if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {
+        $completion->update_state($cm, COMPLETION_COMPLETE);
     }
-}
+    $completion->set_module_viewed($cm);
 
-if ($delete && question_has_capability_on($delete, 'edit')) {
-    if ($confirm && confirm_sesskey()) {
+    if ($lastchanged &&($qaction == 'edit' || $qaction == 'add')) {
+        qcreate_update_grades($qcreate, $USER->id);
         $params['cid'] = $qcreateobj->get_question_category()->id;
-        $params['deleteid'] = $delete;
-        if (!$question = $DB->get_record_select('question', "id = :deleteid AND category = :cid", $params)) {
+        $params['lastchanged'] = $lastchanged;
+        if (!$question = $DB->get_record_select('question', "id = :lastchanged AND category = :cid", $params)) {
             print_error('question_not_found');
         } else {
-            $DB->delete_records('qcreate_grades',
-                    array('qcreateid' => $qcreateobj->get_instance()->id, 'questionid' => $question->id));
-            question_delete_question($question->id);
-            qcreate_update_grades($qcreate, $USER->id);
-            // Update completion state.
-            $completion = new completion_info($course);
-            if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {
-                $completion->update_state($cm, COMPLETION_INCOMPLETE);
-            }
-
-            redirect($CFG->wwwroot.'/mod/qcreate/view.php?id='.$cm->id);
+            $qcreateobj->notify_graders($question);
         }
-    } else {
-        echo $qcreateobj->view(optional_param('action', 'confirmdelete', PARAM_TEXT));
-        die;
     }
-}
 
-// Get the qcreate class to render the view page.
-echo $qcreateobj->view(optional_param('action', 'view', PARAM_TEXT));
+    if ($delete && question_has_capability_on($delete, 'edit')) {
+        if ($confirm && confirm_sesskey()) {
+            $params['cid'] = $qcreateobj->get_question_category()->id;
+            $params['deleteid'] = $delete;
+            if (!$question = $DB->get_record_select('question', "id = :deleteid AND category = :cid", $params)) {
+                print_error('question_not_found');
+            } else {
+                $DB->delete_records('qcreate_grades',
+                        array('qcreateid' => $qcreateobj->get_instance()->id, 'questionid' => $question->id));
+                question_delete_question($question->id);
+                qcreate_update_grades($qcreate, $USER->id);
+                // Update completion state.
+                $completion = new completion_info($course);
+                if ($completion->is_enabled($cm) && $qcreateobj->get_instance()->completionquestions) {
+                    $completion->update_state($cm, COMPLETION_INCOMPLETE);
+                }
+
+                redirect($CFG->wwwroot.'/mod/qcreate/view.php?id='.$cm->id);
+            }
+        } else {
+            echo $qcreateobj->view(optional_param('action', 'confirmdelete', PARAM_TEXT));
+            die;
+        }
+    }
+
+    // Get the qcreate class to render the view page.
+    echo $qcreateobj->view(optional_param('action', 'view', PARAM_TEXT));
+}
