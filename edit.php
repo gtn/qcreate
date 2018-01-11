@@ -165,7 +165,6 @@ $table->define_baseurl($thispageurl->out());
 
 $table->sortable(true, 'lastname');// Sorted by lastname by default.
 $table->collapsible(true);
-$table->initialbars(true);
 
 $table->column_suppress('picture');
 $table->column_suppress('fullname');
@@ -185,7 +184,7 @@ if ($gradinginterface) {
     }
 }
 
-$table->set_attribute('id', 'attempts');
+$table->set_attribute('id', 'student_questions');
 $table->set_attribute('class', 'grades');
 
 if ($gradinginterface) {
@@ -264,6 +263,8 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)) {
     $answercount = 0;
 }
 
+$table->initialbars($answercount > 20);
+
 if ($gradinginterface) {
     echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post">';
     echo '<div>';
@@ -322,7 +323,11 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
         } else {
             $highlight = false;
         }
-        $colquestion = $answer->qname;
+        if ($highlight) {
+            $colquestion = html_writer::tag('span', $answer->qname, array('class' => 'highlight'));
+        } else {
+            $colquestion = $answer->qname;
+        }
         // Preview?
         $strpreview = get_string('preview', 'qcreate');
 
@@ -347,10 +352,8 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 $link, $OUTPUT->pix_icon('t/view', get_string('view'), '', array('class' => 'iconsmall')));
         }
 
-        if ($highlight) {
-            $colquestion = '<span class="highlight">'.$colquestion.'</span>';
-        }
         $colquestion .= '<br />(' . question_bank::get_qtype_name($answer->qtype) . ')';
+        $colquestion = '<div id="qu'.$answer->qid.'">'.$colquestion.'</div>';
         if ($answer->timemodified > 0) {
             $studentmodified = '<div id="ts'.$answer->qid.'">'.userdate($answer->timemodified).'</div>';
         } else {
@@ -404,7 +407,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
             }
         } else {
             $teachermodified = '<div id="tt'.$answer->qid.'">&nbsp;</div>';
-            $status          = '<div id="st'.$answer->qid.'">&nbsp;</div>';
+            $status = '&nbsp;';
 
             if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                 $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
@@ -438,8 +441,9 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
             $status = get_string('graded', 'qcreate');
         }
         if ($highlight) {
-            $status = '<span class="highlight">'.$status.'</span>';
+            $status = html_writer::tag('span', $status, array('class' => 'highlight'));
         }
+        $status = '<div id="st'.$answer->qid.'">'.$status.'</div>';
 
         $finalgradestr = '<span id="finalgrade_'.$answer->qid.'">'.$finalgradevalue->str_grade.'</span>';
 

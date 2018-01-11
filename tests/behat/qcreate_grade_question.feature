@@ -50,7 +50,7 @@ Feature: Test grading a question in a qcreate activity
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Question Creation 001"
-    And "Student 1" row "Status" column of "attempts" table should contain "Needs grading"
+    And "Student 1" row "Status" column of "student_questions" table should contain "Needs grading"
     And I should see "Multi-choice-001"
     And I set the field "Question grade" to "80 / 100"
     And I set the field "Grade comment" to "Feedback from teacher."
@@ -58,4 +58,4 @@ Feature: Test grading a question in a qcreate activity
     Then I should see "Feedback from teacher."
     And I should see "80 / 100"
     And I should not see "Needs grading"
-    And "Student 1" row "Status" column of "attempts" table should contain "Graded"
+    And "Studnet 1" row "Status" column of "student_questions" table should contain "Graded"
