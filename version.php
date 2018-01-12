@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2018011000;
+$plugin->version = 2018011200;
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release  = "2.1 for Moodle 2.9 ... 3.4";
+$plugin->release  = "2.11 for Moodle 2.9 ... 3.4";
 $plugin->requires = 2015050500;
 $plugin->component = 'mod_qcreate';

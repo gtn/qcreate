@@ -123,6 +123,7 @@ $title = $COURSE->shortname . ': ' . format_string($qcreate->name);
 $PAGE->set_title($title);
 $PAGE->set_heading($COURSE->fullname);
 $PAGE->set_context($context);
+$PAGE->force_settings_menu();
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($qcreate->name, 2, null);
@@ -318,16 +319,8 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
         if (empty($answer->gradeid)) {
             $answer->grade = -1; // No grade yet.
         }
-        if ($gradinginterface && !$answer->needsregrading && $answer->timemarked != 0) {
-            $highlight = true;
-        } else {
-            $highlight = false;
-        }
-        if ($highlight) {
-            $colquestion = html_writer::tag('span', $answer->qname, array('class' => 'highlight'));
-        } else {
-            $colquestion = $answer->qname;
-        }
+
+        $colquestion = html_writer::span($answer->qname);
         // Preview?
         $strpreview = get_string('preview', 'qcreate');
 
@@ -370,8 +363,9 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                     $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
                 } else {
+                    $attributes = array('tabindex' => $tabindex++);
                     $menu = html_writer::select($grademenu,
-                            'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')));
+                            'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')), $attributes);
                     $grade = '<div id="g'.$answer->qid.'">'
                             .'<label class="accesshide"
                             for="menumenu' .$answer->qid . '">'
@@ -384,8 +378,9 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                     $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
                 } else {
+                    $attributes = array('tabindex' => $tabindex++);
                     $menu = html_writer::select($grademenu,
-                            'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')));
+                            'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')), $attributes);
                     $grade = '<div id="g'.$answer->qid.'">'
                             .'<label class="accesshide"
                             for="menumenu' .$answer->qid . '">'
@@ -412,8 +407,9 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
             if ($finalgradevalue->locked or $finalgradevalue->overridden) {
                 $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
             } else {   // Allow editing.
+                $attributes = array('tabindex' => $tabindex++);
                 $menu = html_writer::select($grademenu,
-                       'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')));
+                       'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')), $attributes);
                 $grade = '<div id="g'.$answer->qid.'">'
                         .'<label class="accesshide"
                         for="menumenu' .$answer->qid . '">'
@@ -435,14 +431,16 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
 
         if ($answer->timemarked == 0) {
             $status = get_string('needsgrading', 'qcreate');
+            $class = "label label-warning";
         } else if ($answer->needsregrading) {
             $status = get_string('needsregrading', 'qcreate');
+            $class = "label label-warning";
         } else {
             $status = get_string('graded', 'qcreate');
+            $class = "label label-success";
         }
-        if ($highlight) {
-            $status = html_writer::tag('span', $status, array('class' => 'highlight'));
-        }
+        $attributes = array('tabindex' => -1);
+        $status = html_writer::span($status, $class, $attributes);
         $status = '<div id="st'.$answer->qid.'">'.$status.'</div>';
 
         $finalgradestr = '<span id="finalgrade_'.$answer->qid.'">'.$finalgradevalue->str_grade.'</span>';
@@ -497,10 +495,10 @@ echo $tableoutput;
 
 if ($tablehasdata) {
     if ($gradinginterface) {
-        echo '<div style="text-align:center"><input type="submit" name="fastg" value="' .
+        echo '<div style="text-align:center"><input type="submit" class="btn btn-primary" name="fastg" value="' .
                 get_string('saveallfeedbackandgrades', 'qcreate').'" /></div>';
     } else {
-        echo '<div style="text-align:center"><input type="submit" name="fastg" value="' .
+        echo '<div style="text-align:center"><input type="submit" class="btn btn-primary" name="fastg" value="' .
                 get_string('saveallfeedback', 'qcreate').'" /></div>';
     }
     echo '</form>';
@@ -522,5 +520,14 @@ $form .= '</fieldset>';
 $form .= '</form>';
 echo $OUTPUT->box($form, 'generalbox boxaligncenter boxwidthnarrow');
 // End of mini form.
+
+// Link to the export good page.
+echo '<center>';
+echo $OUTPUT->container_start('exportgoodlink');
+$urlparams = array('cmid' => $cm->id);
+$url = new moodle_url('/mod/qcreate/exportgood.php', $urlparams);
+echo '<a href="' . $url . '" class="btn btn-secondary">' . get_string('exportgood', 'mod_qcreate') . '</a> ';
+echo $OUTPUT->container_end();
+echo '</center>';
 
 echo $OUTPUT->footer();
