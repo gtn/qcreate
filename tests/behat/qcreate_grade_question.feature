@@ -53,8 +53,8 @@ Feature: Test grading a question in a qcreate activity
     And I navigate to "Grading" in current page administration
     And "Student 1" row "Status" column of "student_questions" table should contain "Needs grading"
     And I should see "Multi-choice-001"
-    And I set the field "Question grade" to "80 / 100"
-    And I set the field "Grade comment" to "Feedback from teacher."
+    And I set the field "Grade for question 'Multi-choice-001' created by Student 1" to "80 / 100"
+    And I set the field "Comment for question 'Multi-choice-001' created by Student 1" to "Feedback from teacher."
     And I press "Save all grades & feedback"
     Then I should see "Feedback from teacher."
     And I should see "80 / 100"

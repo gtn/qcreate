@@ -66,7 +66,7 @@ if ($updatepref) {
 $groupmode = groups_get_activity_groupmode($cm);
 $currentgroup = groups_get_activity_group($cm, true);
 
-// Get all ppl that are allowed to submit grades.
+// Get all ppl that are allowed to submit questions.
 $context = context_module::instance($cm->id);
 if (!$users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', $currentgroup, '', false)) {
     $users = array();
@@ -80,7 +80,7 @@ if (!empty($CFG->enablegroupings) && !empty($cm->groupingid)) {
 }
 // Grades submitted?
 if ($gradessubmitted) {
-    qcreate_process_grades($qcreate, $cm, $users);
+    $message = qcreate_process_grades($qcreate, $cm, $users);
 }
 
 /* next we get perpage params
@@ -127,6 +127,11 @@ $PAGE->force_settings_menu();
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($qcreate->name, 2, null);
+
+// Grades submitted?
+if ($gradessubmitted) {
+    echo $message;
+}
 
 $thispageurl->params(compact('showgraded', 'showneedsregrade', 'showungraded', 'page'));
 
@@ -320,6 +325,10 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
             $answer->grade = -1; // No grade yet.
         }
 
+        $a = new stdClass();
+        $a->qname = $answer->qname;
+        $a->user = $answer->imagealt;
+
         $colquestion = html_writer::span($answer->qname);
         // Preview?
         $strpreview = get_string('preview', 'qcreate');
@@ -369,7 +378,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                     $grade = '<div id="g'.$answer->qid.'">'
                             .'<label class="accesshide"
                             for="menumenu' .$answer->qid . '">'
-                            .get_string('questiongrade', 'qcreate') .
+                            .get_string('questiongrade', 'qcreate', $a) .
                             '</label>'. $menu .'</div>';
                 }
 
@@ -384,7 +393,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                     $grade = '<div id="g'.$answer->qid.'">'
                             .'<label class="accesshide"
                             for="menumenu' .$answer->qid . '">'
-                            .get_string('questiongrade', 'qcreate') .
+                            .get_string('questiongrade', 'qcreate', $a) .
                             '</label>'.$menu.'</div>';
                 }
             }
@@ -396,7 +405,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 $comment = '<div id="com'.$answer->qid.'">'
                         .'<label class="accesshide"
                         for="gradecomment' . $answer->qid.'">'
-                        . get_string('gradecomment', 'qcreate')
+                        . get_string('gradecomment', 'qcreate', $a)
                         .'</label><textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
                         . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
             }
@@ -413,7 +422,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 $grade = '<div id="g'.$answer->qid.'">'
                         .'<label class="accesshide"
                         for="menumenu' .$answer->qid . '">'
-                        .get_string('questiongrade', 'qcreate') .
+                        .get_string('questiongrade', 'qcreate', $a) .
                         '</label>'.$menu.'</div>';
             }
 
@@ -423,7 +432,7 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
                 $comment = '<div id="com'.$answer->qid.'">'
                         .'<label class="accesshide"
                         for="gradecomment' . $answer->qid.'">'
-                        .get_string('gradecomment', 'qcreate')
+                        .get_string('gradecomment', 'qcreate', $a)
                         .'</label><textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
                          . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
             }
@@ -443,7 +452,10 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
         $status = html_writer::span($status, $class, $attributes);
         $status = '<div id="st'.$answer->qid.'">'.$status.'</div>';
 
-        $finalgradestr = '<span id="finalgrade_'.$answer->qid.'">'.$finalgradevalue->str_grade.'</span>';
+        $finalgradestr = '<label class="accesshide"
+                        for="finalgrade_' . $answer->qid.'">'
+                        .get_string('finalgrade', 'qcreate', $answer->imagealt)
+                        .'</label><span id="finalgrade_'.$answer->qid.'">'.$finalgradevalue->str_grade.'</span>';
 
         $outcomes = '';
 
@@ -467,10 +479,10 @@ if ($answercount && false !== ($answers = $DB->get_records_sql(
         }
 
         if ($gradinginterface) {
-            $row = array($picture, fullname($answer), $colquestion, $grade, $status, $comment, $studentmodified,
+            $row = array($picture, $answer->imagealt, $colquestion, $grade, $status, $comment, $studentmodified,
                     $teachermodified, $finalgradestr);
         } else {
-            $row = array($picture, fullname($answer), $colquestion, $comment, $studentmodified, $finalgradestr);
+            $row = array($picture, $answer->imagealt, $colquestion, $comment, $studentmodified, $finalgradestr);
         }
         if ($usesoutcomes) {
             $row[] = $outcomes;

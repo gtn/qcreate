@@ -890,7 +890,8 @@ function qcreate_process_grades($qcreate, $cm, $users) {
         $qids = array_unique(array_merge($qids, array_keys($submittedgrades)));
     }
     if (!$qids) {
-        return;
+        $message = $OUTPUT->notification(get_string('nothingtosave', 'qcreate'), 'notifyproblem');
+        return $message;
     }
     // Get the cleaned keys which are the questions ids.
     $qids = clean_param_array($qids, PARAM_INT);

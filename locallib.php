@@ -1192,6 +1192,27 @@ class qcreate {
     }
 
     /**
+     * Display a continue page after grading.
+     *
+     * @param string $message - The message to display.
+     * @return string
+     */
+    protected function view_savegrading_result($message) {
+        $o = '';
+        $o .= $this->get_renderer()->render(new qcreate_header($this->get_instance(),
+                                                      $this->get_context(),
+                                                      $this->show_intro(),
+                                                      $this->get_course_module()->id,
+                                                      get_string('savegradingresult', 'qcreate')));
+        $gradingresult = new assign_gradingmessage(get_string('savegradingresult', 'qcreate'),
+                                                   $message,
+                                                   $this->get_course_module()->id);
+        $o .= $this->get_renderer()->render($gradingresult);
+        $o .= $this->view_footer();
+        return $o;
+    }
+
+    /**
      * Show a confirmation page to make sure they want to delete a created question.
      *
      * @return string

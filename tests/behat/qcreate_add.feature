@@ -27,3 +27,5 @@ Feature: A teacher can create a Question Creation activity
     And I should see "Question Creation introduction"
     And I should see "Activity is open. No time limits set."
     And I should see "Grading is 50%% automatic, 50%% manual."
+    And I navigate to "Grading" in current page administration
+    And I should see "Nothing to display"

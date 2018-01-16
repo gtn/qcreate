@@ -65,10 +65,6 @@ $modulecontext = context_module::instance($cm->id);
 if (!$cats = get_categories_for_contexts($modulecontext->id)) {
     debugging('default category not set', DEBUG_DEVELOPER);
 }
-/*
-if (has_capability('mod/qcreate:grade', $modulecontext)) {
-    redirect($CFG->wwwroot.'/mod/qcreate/edit.php?cmid='.$cm->id);
-}*/
 
 $qcreate->cmidnumber = $cm->id;
 
@@ -82,9 +78,11 @@ qcreate_student_q_access_sync($modulecontext, $qcreateobj->get_instance());
 require_login($course, true, $cm);
 
 if (has_capability('mod/qcreate:grade', $modulecontext)) {
+    // View for teachers.
     // Get the qcreate class to render the overview page.
     echo $qcreateobj->view(optional_param('action', 'overview', PARAM_TEXT));
 } else {
+    // View for students.
     require_capability('mod/qcreate:view', $modulecontext);
 
     // Update completion state.
