@@ -52,11 +52,6 @@ define('QCREATE_MAX_PER_PAGE', 100);
  */
 define('QCREATE_EVENT_TYPE_OPEN', 'open');
 define('QCREATE_EVENT_TYPE_CLOSE', 'close');
-/**
- * If start and end date for the qcreate activity are more than this many seconds apart
- * they will be represented by two separate events in the calendar
- */
-define("QCREATE_MAX_EVENT_LENGTH", 5 * 24 * 60 * 60);   // 5 days maximum.
 
 /**
  * Returns the information on whether the module supports a feature

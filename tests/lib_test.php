@@ -157,4 +157,85 @@ class mod_qcreate_lib_testcase extends mod_qcreate_base_testcase {
 
         $this->assertTrue($result);
     }
+
+    /**
+     * Tests for mod_qcreate_refresh_events.
+     */
+    public function test_qcreate_refresh_events() {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $timeopen = time();
+        // 15 days duration.
+        $timeclose = time() + DAYSECS * 15;
+        $newtimeclose = $timeclose + DAYSECS;
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $params = array();
+        $params['course'] = $course->id;
+        $params['timeopen'] = $timeopen;
+        $params['timeclose'] = $timeclose;
+        $qcreate = $this->create_instance($params);
+
+        // Make sure the calendar events for qcreate 1 matches the initial parameters.
+        $instance = $qcreate->get_instance();
+        $this->assertTrue(qcreate_refresh_events($course->id));
+        $eventparams = array('modulename' => 'qcreate', 'instance' => $instance->id, 'eventtype' => 'open');
+        $openevent = $DB->get_record('event', $eventparams, '*', MUST_EXIST);
+        $this->assertEquals($openevent->timestart, $timeopen);
+
+        $eventparams = array('modulename' => 'qcreate', 'instance' => $instance->id, 'eventtype' => 'close');
+        $closeevent = $DB->get_record('event', $eventparams, '*', MUST_EXIST);
+        $this->assertEquals($closeevent->timestart, $timeclose);
+
+        // In case the course ID is passed as a numeric string.
+        $this->assertTrue(qcreate_refresh_events('' . $course->id));
+        // Course ID not provided.
+        $this->assertTrue(qcreate_refresh_events());
+        $eventparams = array('modulename' => 'qcreate');
+        $events = $DB->get_records('event', $eventparams);
+        foreach ($events as $event) {
+            if ($event->modulename === 'qcreate' && $event->instance === $instance->id && $event->eventtype === 'open') {
+                $this->assertEquals($event->timestart, $timeopen);
+            }
+            if ($event->modulename === 'qcreate' && $event->instance === $instance->id && $event->eventtype === 'close') {
+                $this->assertEquals($event->timestart, $timeclose);
+            }
+        }
+        // Manually update qcreate 1's close time.
+        $DB->update_record('qcreate', (object)['id' => $instance->id, 'timeclose' => $newtimeclose]);
+
+        // Then refresh the qcreate events of qcreate 1's course.
+        $this->assertTrue(qcreate_refresh_events($course->id));
+
+        // Confirm that the qcreate 1's close date event now has the new close date after refresh.
+        $eventparams = array('modulename' => 'qcreate', 'instance' => $instance->id, 'eventtype' => 'close');
+        $eventtime = $DB->get_field('event', 'timestart', $eventparams, MUST_EXIST);
+        $this->assertEquals($eventtime, $newtimeclose);
+
+        // Create a second course and qcreate.
+        $course2 = $generator->create_course();
+        $params['course'] = $course2->id;
+        $qcreate2 = $this->create_instance($params);
+        $instance2 = $qcreate2->get_instance();
+
+        // Manually update qcreate 1 and 2's close dates.
+        $newtimeclose += DAYSECS;
+        $DB->update_record('qcreate', (object)['id' => $instance->id, 'timeclose' => $newtimeclose]);
+        $DB->update_record('qcreate', (object)['id' => $instance2->id, 'timeclose' => $newtimeclose]);
+
+        // Refresh events of all courses.
+        $this->assertTrue(qcreate_refresh_events());
+
+        // Check the due date calendar event for qcreate 1.
+        $eventtime = $DB->get_field('event', 'timestart', $eventparams, MUST_EXIST);
+        $this->assertEquals($eventtime, $newtimeclose);
+
+        // Check the due date calendar event for qcreate 2.
+        $eventparams['instance'] = $instance2->id;
+        $eventtime = $DB->get_field('event', 'timestart', $eventparams, MUST_EXIST);
+        $this->assertEquals($eventtime, $newtimeclose);
+    }
 }

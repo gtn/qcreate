@@ -384,7 +384,6 @@ class qcreate {
     /**
      * Update the calendar entries for this qcreate activity.
      *
-     * @uses QCREATE_MAX_EVENT_LENGTH
      * @param int $coursemoduleid - Required to pass this in because it might
      *                              not exist in the database yet.
      * @return bool
@@ -395,29 +394,29 @@ class qcreate {
 
         // Special case for add_instance as the coursemodule has not been set yet.
         $instance = $this->get_instance();
-        // Load the old events relating to this qcreate.
-        $conds = array('modulename' => 'qcreate',
-                       'instance' => $instance->id);
-        $oldevents = $DB->get_records('event', $conds);
-
         $cm = get_coursemodule_from_instance('qcreate', $instance->id);
-
-        // Start with creating the event.
-        $event = new stdClass();
-        $event->modulename  = 'qcreate';
-        $event->courseid = $instance->course;
-        $event->description = format_module_intro('qcreate', $instance, $cm->id);
-        $event->groupid = 0;
-        $event->userid  = 0;
-        $event->instance  = $instance->id;
-        $event->type = CALENDAR_EVENT_TYPE_ACTION;
-        $event->timestart   = $instance->timeopen;
-        $event->timeduration = $instance->timeclose - $instance->timeopen;
-        $event->visible     = instance_is_visible('qcreate', $instance);
-        $event->eventtype   = QCREATE_EVENT_TYPE_OPEN;
-
-        if ($instance->timeclose and $instance->timeopen and $event->timeduration <= QCREATE_MAX_EVENT_LENGTH) {
-            // Single event for the whole qcreate.
+        
+        // Load the old events relating to this qcreate.
+        $conds = array('modulename'=>'qcreate',
+                       'instance'=>$instance->id);
+        $oldevents = $DB->get_records('event', $conds, 'id ASC');
+        
+        // Qcreate start calendar event.
+        if (isset($instance->timeopen) && $instance->timeopen > 0) {
+            $event = new stdClass();
+            $event->eventtype    = QCREATE_EVENT_TYPE_OPEN;
+            $event->type         = CALENDAR_EVENT_TYPE_ACTION;;
+            $event->name         = $event->name = get_string('qcreateeventopens', 'qcreate', $instance->name);
+            $event->courseid = $instance->course;
+            $event->groupid      = 0;
+            $event->userid       = 0;
+            $event->modulename   = 'qcreate';
+            $event->instance     = $instance->id;
+            $event->description = format_module_intro('qcreate', $instance, $cm->id);
+            $event->timestart    = $instance->timeopen;
+            $event->timesort     = $instance->timeopen;
+            $event->visible      = instance_is_visible('qcreate', $instance);
+            $event->timeduration = 0;
             if ($oldevent = array_shift($oldevents)) {
                 $event->id = $oldevent->id;
             } else {
@@ -425,29 +424,37 @@ class qcreate {
             }
             // The method calendar_event::create will reuse a db record if the id field is set.
             calendar_event::create($event);
-        } else {
-            // Separate start and end events.
-            $event->timeduration  = 0;
-            if ($instance->timeopen) {
-                if ($oldevent = array_shift($oldevents)) {
-                    $event->id = $oldevent->id;
-                } else {
-                    unset($event->id);
-                }
-                $event->name = get_string('qcreateeventopens', 'qcreate', $instance->name);
-                calendar_event::create($event);
+        }
+        
+        // Qcreate close calendar event.
+        if (isset($instance->timeclose) && $instance->timeclose > 0) {
+            $event = new stdClass();
+            $event->eventtype    = QCREATE_EVENT_TYPE_CLOSE;
+            $event->type         = CALENDAR_EVENT_TYPE_ACTION;;
+            $event->name         = $event->name = get_string('qcreateeventcloses', 'qcreate', $instance->name);
+            $event->courseid = $instance->course;
+            $event->groupid      = 0;
+            $event->userid       = 0;
+            $event->modulename   = 'qcreate';
+            $event->instance     = $instance->id;
+            $event->description = format_module_intro('qcreate', $instance, $cm->id);
+            $event->timestart    = $instance->timeclose;
+            $event->timesort     = $instance->timeclose;
+            $event->visible      = instance_is_visible('qcreate', $instance);
+            $event->timeduration = 0;
+            if ($oldevent = array_shift($oldevents)) {
+                $event->id = $oldevent->id;
+            } else {
+                unset($event->id);
             }
-            if ($instance->timeclose) {
-                if ($oldevent = array_shift($oldevents)) {
-                    $event->id = $oldevent->id;
-                } else {
-                    unset($event->id);
-                }
-                $event->name      = get_string('qcreateeventcloses', 'qcreate', $instance->name);
-                $event->timestart = $instance->timeclose;
-                $event->eventtype = QCREATE_EVENT_TYPE_CLOSE;
-                calendar_event::create($event);
-            }
+            // The method calendar_event::create will reuse a db record if the id field is set.
+            calendar_event::create($event);
+        }
+
+        // Delete any leftover events.
+        foreach ($oldevents as $badevent) {
+            $badevent = calendar_event::load($badevent);
+            $badevent->delete();
         }
     }
 
