@@ -395,12 +395,12 @@ class qcreate {
         // Special case for add_instance as the coursemodule has not been set yet.
         $instance = $this->get_instance();
         $cm = get_coursemodule_from_instance('qcreate', $instance->id);
-        
+
         // Load the old events relating to this qcreate.
-        $conds = array('modulename'=>'qcreate',
-                       'instance'=>$instance->id);
+        $conds = array('modulename' => 'qcreate',
+                       'instance' => $instance->id);
         $oldevents = $DB->get_records('event', $conds, 'id ASC');
-        
+
         // Qcreate start calendar event.
         if (isset($instance->timeopen) && $instance->timeopen > 0) {
             $event = new stdClass();
@@ -425,7 +425,7 @@ class qcreate {
             // The method calendar_event::create will reuse a db record if the id field is set.
             calendar_event::create($event);
         }
-        
+
         // Qcreate close calendar event.
         if (isset($instance->timeclose) && $instance->timeclose > 0) {
             $event = new stdClass();

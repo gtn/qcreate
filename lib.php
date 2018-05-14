@@ -1291,6 +1291,41 @@ function qcreate_extend_settings_navigation(settings_navigation $settingsnav, na
 }
 
 /**
+ * Add a get_coursemodule_info function in case any qcreate type wants to add 'extra' information
+ * for the course (see resource).
+ *
+ * Given a course_module object, this function returns any "extra" information that may be needed
+ * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
+ *
+ * @param stdClass $coursemodule The coursemodule object (record).
+ * @return cached_cm_info An object on information that the courses
+ *                        will know about (most noticeably, an icon).
+ */
+function qcreate_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $dbparams = ['id' => $coursemodule->instance];
+    $fields = 'id, name, intro, introformat, completionquestions';
+    if (!$qcreate = $DB->get_record('qcreate', $dbparams, $fields)) {
+        return false;
+    }
+
+    $result = new cached_cm_info();
+    $result->name = $qcreate->name;
+
+    if ($coursemodule->showdescription) {
+        // Convert intro to html. Do not filter cached version, filters run at display time.
+        $result->content = format_module_intro('qcreate', $qcreate, $coursemodule->id, false);
+    }
+
+    // Populate the custom completion rules as key => value pairs, but only if the completion mode is 'automatic'.
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $result->customdata['customcompletionrules']['completionquestions'] = $qcreate->completionquestions;
+    }
+
+    return $result;
+}
+/**
  * Callback which returns human-readable strings describing the active completion custom rules for the module instance.
  *
  * @param cm_info|stdClass $cm object with fields ->completion and ->customdata['customcompletionrules']
@@ -1310,7 +1345,7 @@ function mod_qcreate_get_completion_active_rule_descriptions($cm) {
                 if (empty($val)) {
                     continue;
                 }
-                $descriptions[] = get_string('completionquesttionsdesc', 'qcreate', $val);
+                $descriptions[] = get_string('completionquestionsdesc', 'qcreate', $val);
                 break;
             default:
                 break;
@@ -1530,14 +1565,49 @@ function qcreate_check_updates_since(cm_info $cm, $from, $filter = array()) {
 
     $updates = course_check_module_updates_since($cm, $from, array(), $filter);
 
-    // Check if questions have been modified.
+    // Check if questions have been modified or added.
+    $context = $cm->context;
+    $updates->questions = (object) array('updated' => false);
+    $qcreateobj = new qcreate($context, null, null);
+    $instance = $qcreateobj->get_instance();
+
+    list($whereqtype, $params) = $qcreateobj->get_allowed_qtypes_where();
+    $params['time1'] = $from;
+    $params['time2'] = $from;
+    if (has_capability('mod/qcreate:grade', $qcreateobj->get_context())) {
+        // Teacher should see questions from all users.
+        $whereuser = 'q.createdby = :userid AND (q.timemodified > :time1 OR q.timecreated > :time2) AND ';
+    } else {
+        $params['userid'] = $USER->id;
+        $whereuser = 'q.createdby = :userid AND (q.timemodified > :time1 OR q.timecreated > :time2) AND ';
+    }
+    $params['contextid'] = $qcreateobj->get_context()->id;
+
+    $questionsql = "SELECT q.*, c.id as cid, c.name as cname, g.grade, g.gradecomment, g.id as gid
+            FROM {question_categories} c, {question} q
+            LEFT JOIN {qcreate_grades} g ON q.id = g.questionid
+                                                          AND g.qcreateid = {$instance->id}
+            WHERE $whereqtype $whereuser c.contextid = :contextid AND c.id = q.category AND q.hidden='0' AND q.parent='0'";
+    $questions = $DB->get_records_sql($questionsql, $params);
+    if (!empty($questions)) {
+        $updates->questions->updated = true;
+        $updates->questions->itemids = array_keys($questions);
+    }
 
     // Check for new grades.
+    // TODO : what should see teachers here ?
     $updates->grades = (object) array('updated' => false);
-    // TODO : comment restreindre à l'utilisateur.
-    $select = 'qcreateid = ? AND timemarked > ?';
-    $params = array($cm->instance, $USER->id, $from);
-    $grades = $DB->get_records_select('qcreate_grades', $select, $params, '', 'id');
+    $params['userid'] = $USER->id;
+    $params['time1'] = $from;
+    $params['contextid'] = $context->id;
+    $sql = "SELECT g.id, g.grade AS rawgrade, g.gradecomment AS feedback,
+            g.teacher AS usermodified, q.qtype AS qtype
+            FROM {user} u, {question_categories} qc, {question} q
+            LEFT JOIN {qcreate_grades} g ON g.questionid = q.id
+            WHERE u.id = :userid AND u.id = q.createdby AND qc.id = q. category AND qc.contextid= :contextid
+            AND timemarked > :time1
+            ORDER BY rawgrade DESC";
+    $grades = $DB->get_records_sql($sql, $params);
     if (!empty($grades)) {
         $updates->grades->updated = true;
         $updates->grades->itemids = array_keys($grades);
@@ -1566,6 +1636,7 @@ function mod_qcreate_core_calendar_provide_event_action(calendar_event $event,
     $cm = get_fast_modinfo($event->courseid)->instances['qcreate'][$event->instance];
     $context = context_module::instance($cm->id);
     $qcreateobj = new qcreate($context, $cm, null);
+    $instance = $qcreateobj->get_instance();
 
     // Check they have capabilities allowing them to view the qcreate.
     if (!has_any_capability(array('mod/qcreate:view', 'mod/qcreate:submit'), $qcreateobj->get_context())) {
@@ -1573,7 +1644,7 @@ function mod_qcreate_core_calendar_provide_event_action(calendar_event $event,
     }
 
     // Check if qcreate is closed, if so don't display it.
-    if (!empty($qcreate->timeclose) && $qcreate->timeclose <= time()) {
+    if (!empty($instance->timeclose) && $instance->timeclose <= time()) {
         return null;
     }
 
@@ -1585,7 +1656,7 @@ function mod_qcreate_core_calendar_provide_event_action(calendar_event $event,
     $actionable = true;
 
     // Check if the qcreate is not currently actionable.
-    if (!empty($qcreate->timeopen) && $qcreate->timeopen > time()) {
+    if (!empty($instance->timeopen) && $instance->timeopen > time()) {
         $actionable = false;
     }
 
@@ -1671,7 +1742,7 @@ function mod_qcreate_core_calendar_event_timestart_updated(\calendar_event $even
 
     // Something weird going on. The event is for a different module so
     // we should ignore it.
-    if ($modulename != 'qcreate') {
+    if (empty($event->instance) || $event->modulename != 'qcreate') {
         return;
     }
 
@@ -1689,23 +1760,20 @@ function mod_qcreate_core_calendar_event_timestart_updated(\calendar_event $even
         return;
     }
 
-    $qcreateobj = new qcreate($context, $coursemodule, null);
-    $qcreateobj->set_instance($instance);
-
     if ($event->eventtype == QCREATE_EVENT_TYPE_OPEN) {
         // If the event is for the qcreate activity opening then we should
         // set the start time of the qcreate activity to be the new start
         // time of the event.
-        if ($qcreateobj->timeopen != $event->timestart) {
-            $qcreateobj->timeopen = $event->timestart;
+        if ($qcreate->timeopen != $event->timestart) {
+            $qcreate->timeopen = $event->timestart;
             $modified = true;
         }
     } else if ($event->eventtype == QCREATE_EVENT_TYPE_CLOSE) {
         // If the event is for the qcreate activity closing then we should
         // set the end time of the qcreate activity to be the new start
         // time of the event.
-        if ($qcreateobj->timeclose != $event->timestart) {
-            $qcreateobj->timeclose = $event->timestart;
+        if ($qcreate->timeclose != $event->timestart) {
+            $qcreate->timeclose = $event->timestart;
             $modified = true;
             $closedatechanged = true;
         }
@@ -1713,9 +1781,9 @@ function mod_qcreate_core_calendar_event_timestart_updated(\calendar_event $even
 
     if ($modified) {
         $qcreate->timemodified = time();
-        $DB->update_record('qcreate', $qcreateobj);
+        $DB->update_record('qcreate', $qcreate);
 
-        qcreate_update_events($qcreateobj);
+        qcreate_update_events($qcreate);
         $event = \core\event\course_module_updated::create_from_cm($coursemodule, $context);
         $event->trigger();
     }
