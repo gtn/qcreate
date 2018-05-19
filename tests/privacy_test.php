@@ -22,6 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_privacy\local\metadata\collection;
 use core_privacy\tests\provider_testcase;
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\transform;
@@ -40,7 +41,77 @@ global $CFG;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_qcreate_privacy_testcase extends provider_testcase {
+    /** @var stdClass The student object. */
+    protected $student;
 
+    /** @var stdClass The teacher object. */
+    protected $teacher;
+
+    /** @var stdClass The qcreate object. */
+    protected $qcreate;
+
+    /** @var stdClass The course object. */
+    protected $course;
+
+    /** @var stdClass The question object. */
+    protected $question;
+
+    protected function setUp() {
+        $this->resetAfterTest();
+        // Create a course.
+        $course = $this->getDataGenerator()->create_course();
+
+        // Create a student and a teacher.
+        $user = $this->getDataGenerator()->create_user();
+        $teacher = $this->getDataGenerator()->create_user();;
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        // Make a qcreate activity.
+        $this->setUser($teacher);
+        $qcreate = $this->create_test_qcreate($course);
+
+        // The qcreate_process_local_grade needs cmidnumber set.
+        list($course, $cm) = get_course_and_cm_from_cmid($qcreate->cmid, 'qcreate');
+        $qcreate->cmidnumber = $cm->id;
+
+        // Create a question.
+        $q1 = $this->qcreate_add_qcreate_question($user, $qcreate, 'shortanswer');
+
+        // Grade question.
+        $this->setUser($teacher);
+        qcreate_process_local_grade($qcreate, $q1, false, false, 90, 'Good job.');
+
+        $this->student = $user;
+        $this->teacher = $teacher;
+        $this->qcreate = $qcreate;
+        $this->course = $course;
+        $this->question = $q1;
+    }
+
+    /**
+     * Test for provider::get_metadata().
+     */
+    public function test_get_metadata() {
+        $collection = new collection('mod_qcreate');
+        $newcollection = provider::get_metadata($collection);
+        $itemcollection = $newcollection->get_collection();
+
+        $this->assertCount(2, $itemcollection);
+
+        $table = reset($itemcollection);
+        $this->assertEquals('qcreate_grades', $table->get_name());
+
+        $privacyfields = $table->get_privacy_fields();
+        $this->assertArrayHasKey('qcreateid', $privacyfields);
+        $this->assertArrayHasKey('questionid', $privacyfields);
+        $this->assertArrayHasKey('grade', $privacyfields);
+        $this->assertArrayHasKey('gradecomment', $privacyfields);
+        $this->assertArrayHasKey('teacher', $privacyfields);
+        $this->assertArrayHasKey('timemarked', $privacyfields);
+
+        $this->assertEquals('privacy:metadata:qcreate_grades', $table->get_summary());
+    }
     /**
      * Test that a user who has no data gets no contexts
      */
@@ -94,49 +165,24 @@ class mod_qcreate_privacy_testcase extends provider_testcase {
     }
 
     /**
-     * Export + Delete qcreate data for a user who has made a single attempt.
+     * Export + Delete qcreate data for a user who has made a single question.
      */
     public function test_user_with_data() {
         global $DB;
-        $this->resetAfterTest(true);
-
-        $course = $this->getDataGenerator()->create_course();
-        $coursecontext = \context_course::instance($course->id);
-
-        $user = $this->getDataGenerator()->create_user();
-       // echo " student : $user->id ";
-        $teacher = $this->getDataGenerator()->create_user();
-      //  echo " teacher : $teacher->id ";
-        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
-        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
-        $otheruser = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->enrol_user($otheruser->id, $course->id, 'student');
-
-        // Make a qcreate activity.
-        $this->setUser($teacher);
-        $qcreate = $this->create_test_qcreate($course);
-        $cm = get_coursemodule_from_instance('qcreate', $qcreate->id);
+        $cm = get_coursemodule_from_instance('qcreate', $this->qcreate->id);
         $context = context_module::instance($cm->id);
 
-        // The qcreate_process_local_grade needs cmidnumber set.
-        list($course, $cm) = get_course_and_cm_from_cmid($qcreate->cmid, 'qcreate');
-        $qcreate->cmidnumber = $cm->id;
-
-        // Create a question.
-        $q1 = $this->qcreate_add_qcreate_question($user, $qcreate, 'shortanswer');
-
-        // Grade question.
-        $this->setUser($teacher);
-        qcreate_process_local_grade($qcreate, $q1, false, false, 90, 'Good job.');
-
         // Fetch the contexts - only one context should be returned.
-        $contextlist = provider::get_contexts_for_userid($user->id);
+        $contextlist = provider::get_contexts_for_userid($this->student->id);
         $this->assertCount(1, $contextlist);
         $this->assertEquals($context, $contextlist->current());
+        // Verify that there is one local grade.
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $this->qcreate->id]);
+        $this->assertEquals(1, $count);
 
         // Perform the export and check the data.
         $approvedcontextlist = new \core_privacy\tests\request\approved_contextlist(
-            \core_user::get_user($user->id),
+            \core_user::get_user($this->student->id),
             'mod_qcreate',
             $contextlist->get_contextids()
         );
@@ -147,110 +193,130 @@ class mod_qcreate_privacy_testcase extends provider_testcase {
         $this->assertTrue($writer->has_any_data());
 
         $qcreatedata = $writer->get_data([]);
- //  echo " qcreate data in test ";
-  //      var_dump($qcreatedata);
-        $this->assertEquals($qcreate->name, $qcreatedata->name);
+        $this->assertEquals($this->qcreate->name, $qcreatedata->name);
 
         // Every module has an intro.
         $this->assertTrue(isset($qcreatedata->intro));
 
 
         // Delete the data and check it is removed.
-    //    $this->setUser();
-    //    provider::delete_data_for_user($approvedcontextlist);
-    //    $this->expectException(\dml_missing_record_exception::class);
+        $this->setUser();
+        provider::delete_data_for_user($approvedcontextlist);
+        // Verify that there is no local grade.
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $this->qcreate->id]);
+        $this->assertEquals(0, $count);
     }
 
     /**
      * Export + Delete qcreate data for a user who has made a single attempt.
      */
-/*    public function test_delete_data_for_all_users_in_context() {
+    public function test_delete_data_for_all_users_in_context() {
         global $DB;
-        $this->resetAfterTest(true);
-
-        $course = $this->getDataGenerator()->create_course();
-        $user = $this->getDataGenerator()->create_user();
-        $otheruser = $this->getDataGenerator()->create_user();
-
-        // Make a qcreate.
-        $this->setUser();
-        $qcreate = $this->create_test_qcreate($course);
-        $cm = get_coursemodule_from_instance('qcreate', $qcreate->id);
+        $cm = get_coursemodule_from_instance('qcreate', $this->qcreate->id);
         $context = context_module::instance($cm->id);
 
-        //Create questions as 2 different users.
-        $q1 = $this->qcreate_add_qcreate_question($user, $qcreate, 'shortanswer');
-        $q2 = $this->qcreate_add_qcreate_question($otheruser, $qcreate, 'shortanswer');
+        $otheruser = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($otheruser->id, $this->course->id, 'student');
 
-        // Create another qcreate and questions, and repeat the data insertion.
+        $q1 = $this->question;
+        //Create another question.
+        $q2 = $this->qcreate_add_qcreate_question($otheruser, $this->qcreate, 'shortanswer');
+
+        // Grade question.
+        $this->setUser($this->teacher);
+        qcreate_process_local_grade($this->qcreate, $q2, false, false, 70, 'Not too bad.');
+
+        // Create another qcreate.
         $this->setUser();
-        $otherqcreate = $this->create_test_qcreate($course);
+        $otherqcreate = $this->create_test_qcreate($this->course);
+
+        // The qcreate_process_local_grade needs cmidnumber set.
+        list($course, $cm) = get_course_and_cm_from_cmid($otherqcreate->cmid, 'qcreate');
+        $otherqcreate->cmidnumber = $cm->id;
 
         // Create questions.
-        $this->qcreate_add_qcreate_question($user, $otherqcreate, 'shortanswer');
-        $this->qcreate_add_qcreate_question($otheruser, $otherqcreate, 'shortanswer');
+        $q3 = $this->qcreate_add_qcreate_question($this->student, $otherqcreate, 'shortanswer');
+        $q4 = $this->qcreate_add_qcreate_question($otheruser, $otherqcreate, 'shortanswer');
+
+        // Grade the questions
+        $this->setUser($this->teacher);
+        qcreate_process_local_grade($otherqcreate, $q3, false, false, 50, 'You can do better.');
+        qcreate_process_local_grade($otherqcreate, $q4, false, false, 40, 'Poor job.');
+
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $this->qcreate->id]);
+        $this->assertEquals(2, $count);
 
         // Delete all data for all users in the context under test.
         $this->setUser();
         provider::delete_data_for_all_users_in_context($context);
-        // The qcreate local grades should have been deleted.
+        // Verify that there is only grades for second qcreate.
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $this->qcreate->id]);
+        $this->assertEquals(0, $count);
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $otherqcreate->id]);
+        $this->assertEquals(2, $count);
 
-    } */
+        // Delete data only for first student.
+        $contextlist = provider::get_contexts_for_userid($this->student->id);
+        $approvedcontextlist = new \core_privacy\tests\request\approved_contextlist(
+            \core_user::get_user($this->student->id),
+            'mod_qcreate',
+            $contextlist->get_contextids()
+        );
+        $this->setUser();
+        provider::delete_data_for_user($approvedcontextlist);
+        // Verify that there is 1 local grade.
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $otherqcreate->id]);
+        $this->assertEquals(1, $count);
+
+    }
 
     /**
-     * Export + Delete qcreate data for a user who has made a single attempt.
+     * Export + Delete qcreate data for a teacher who has both made and graded question.
      */
-/*    public function test_wrong_context() {
+    public function test_teacher_with_data() {
         global $DB;
-        $this->resetAfterTest(true);
+        $cm = get_coursemodule_from_instance('qcreate', $this->qcreate->id);
+        $context = context_module::instance($cm->id);
 
-        $course = $this->getDataGenerator()->create_course();
-        $user = $this->getDataGenerator()->create_user();
+        //Create another question.
+        $q2 = $this->qcreate_add_qcreate_question($this->teacher, $this->qcreate, 'shortanswer');
 
-        // Make a qcreate.
-        $this->setUser();
-        $plugingenerator = $this->getDataGenerator()->get_plugin_generator('mod_qcreate');
-        $qcreate = $plugingenerator->create_instance(['course' => $course->id]);
-        $cm = get_coursemodule_from_instance('qcreate', $qcreate->id);
-        $context = \context_module::instance($cm->id);
+        $otherteacher = $this->getDataGenerator()->create_user();;
+        $this->getDataGenerator()->enrol_user($otherteacher->id, $this->course->id, 'editingteacher');
+        // Grade question.
+        $this->setUser($otherteacher);
+        qcreate_process_local_grade($this->qcreate, $q2, false, false, 95, 'Very good.');
 
-        // Fetch the contexts - no context should be returned.
-        $this->setUser();
-        $contextlist = provider::get_contexts_for_userid($user->id);
-        $this->assertCount(0, $contextlist);
+        // Fetch the contexts - only one context should be returned.
+        $contextlist = provider::get_contexts_for_userid($this->teacher->id);
+        $this->assertCount(1, $contextlist);
+        $this->assertEquals($context, $contextlist->current());
+
+        // Verify that there is 2 local grades.
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $this->qcreate->id]);
+        $this->assertEquals(2, $count);
 
         // Perform the export and check the data.
-        $this->setUser($user);
         $approvedcontextlist = new \core_privacy\tests\request\approved_contextlist(
-            \core_user::get_user($user->id),
+            \core_user::get_user($this->teacher->id),
             'mod_qcreate',
-            [$context->id]
+            $contextlist->get_contextids()
         );
-        provider::export_user_data($approvedcontextlist);
+        $grade = $DB->get_record('qcreate_grades', array('questionid' => $this->question->id));
 
-        // Ensure that nothing was exported.
-        $writer = writer::with_context($context);
-        $this->assertFalse($writer->has_any_data_in_any_context());
-
+        // Delete the data and check it is removed.
         $this->setUser();
-
-        $dbwrites = $DB->perf_get_writes();
-
-        // Perform a deletion with the approved contextlist containing an incorrect context.
-        $approvedcontextlist = new \core_privacy\tests\request\approved_contextlist(
-            \core_user::get_user($user->id),
-            'mod_qcreate',
-            [$context->id]
-        );
         provider::delete_data_for_user($approvedcontextlist);
-        $this->assertEquals($dbwrites, $DB->perf_get_writes());
-        $this->assertDebuggingNotCalled();
 
-        // Perform a deletion of all data in the context.
-        provider::delete_data_for_all_users_in_context($context);
-        $this->assertEquals($dbwrites, $DB->perf_get_writes());
-        $this->assertDebuggingNotCalled();
-    } */
+        // Verify that teacher's grade was deleted.
+        $count = $DB->count_records('qcreate_grades', ['qcreateid' => $this->qcreate->id]);
+        $this->assertEquals(1, $count);
+
+        // Verify that question graded has been anonymized.
+        $grade = $DB->get_record('qcreate_grades', array('questionid' => $this->question->id));
+        $this->assertEquals($grade->teacher, 0);
+        $this->assertEquals($grade->gradecomment, '');
+    }
 
     /**
      * Create a test qcreate for the specified course.

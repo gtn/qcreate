@@ -99,7 +99,7 @@ class provider implements
                                               LEFT JOIN {course_modules} cm ON cm.id = c.instanceid AND c.contextlevel = :contextlevel
                                               LEFT JOIN {modules} m ON m.id = cm.module AND m.name = :modname
                                               LEFT JOIN {qcreate} a ON a.id = cm.instance
-            WHERE 
+            WHERE
                 g.teacher = :qauserid OR
                 q.createdby = :qouserid';
 
@@ -178,6 +178,8 @@ class provider implements
     public static function delete_data_for_user(approved_contextlist $contextlist) {
         global $DB;
 
+        $user = $contextlist->get_user();
+
         foreach ($contextlist as $context) {
             $cm = get_coursemodule_from_id('qcreate', $context->instanceid);
             if (!$cm) {
@@ -187,10 +189,17 @@ class provider implements
             $qcreateobj = new \qcreate($context, null, null);
 
             // This will delete all local grades for this user and this qcreate instance.
-            $qcreateobj->delete_user_local_grades($user);
+            $qcreateobj->delete_user_local_grades($user->id);
+
+            // If this user has graded any question we need to anonymise the user id in the grade.
+            $params = ['grader' => $user->id, 'qcreateid' => $qcreateobj->get_instance()->id];
+            $DB->set_field_select('qcreate_grades', 'gradecomment', '',
+                    'teacher = :grader AND qcreateid = :qcreateid', $params);
+            $DB->set_field_select('qcreate_grades', 'teacher', 0,
+                    'teacher = :grader AND qcreateid = :qcreateid', $params);
         }
     }
-    
+
     /**
      * Find out if this user has graded any users.
      *
@@ -212,7 +221,7 @@ class provider implements
         $userids = $useridlist->get_userids();
         return ($userids) ? $userids : false;
     }
-    
+
     /**
      * Exports qcreate grade data for a user.
      *
@@ -228,8 +237,6 @@ class provider implements
             // We need to export all local grades made by this teacher.
             $grades = $qcreateobj->get_all_local_grades($user->id, true);
             foreach ($grades as $grade) {
-              //  echo " exporting teacher grade ";
-              //  var_dump($grade);
                 self::export_grade_data($grade, $context, $path);
             }
         }
@@ -237,12 +244,10 @@ class provider implements
         $grades = $qcreateobj->get_all_local_grades($user->id, false);
 
         foreach ($grades as $grade) {
-             //   echo " exporting student grade ";
-             //   var_dump($grades);
                 self::export_grade_data($grade, $context, $path);
         }
     }
-    
+
     /**
      * Formats and then exports the user's grade data.
      *
@@ -255,6 +260,7 @@ class provider implements
             'timemarked' => transform::datetime($grade->grademodified),
             'teacher' => transform::user($grade->grader),
             'grade' => $grade->bestgrade,
+            'question' => $grade->questiongraded,
             'gradecomment' => $grade->teachercomment,
         ];
       //  echo " writer ";

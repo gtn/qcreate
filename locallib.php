@@ -1328,14 +1328,15 @@ class qcreate {
      */
 
     public function get_all_local_grades($userid, $isgrader = false) {
-        global $DB, $USER, $PAGE;
-        
+        global $DB;
+
         $params = array('qcreateid'=>$this->get_instance()->id, 'userid'=>$userid);
         $userwhere = $isgrader ? "qg.teacher = :userid" : "q.createdby = :userid";
         $sql = "SELECT
                     q.*,
                     qg.id AS hasgrade,
                     qg.grade AS bestgrade,
+                    qg.questionid AS questiongraded,
                     qg.timemarked AS grademodified,
                     qg.teacher AS grader,
                     qg.gradecomment AS teachercomment
@@ -1349,6 +1350,16 @@ class qcreate {
         $grades = $DB->get_records_sql($sql, $params);
 
         return $grades;
+    }
+
+    public function delete_user_local_grades($userid) {
+        global $DB;
+        $cat = $this->get_question_category()->id;
+        $questions = $DB->get_records('question', array('category'=> $cat, 'createdby' => $userid), '', 'id');
+        if ($questions) {
+            list($qids, $params) = $DB->get_in_or_equal(array_keys($questions), SQL_PARAMS_NAMED);
+            $DB->delete_records_select('qcreate_grades', 'questionid ' . $qids, $params);
+        }
     }
     /**
      * This will retrieve a grade object from the db.
