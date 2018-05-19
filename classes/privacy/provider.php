@@ -89,16 +89,17 @@ class provider implements
      */
     public static function get_contexts_for_userid(int $userid) : contextlist {
 
-        // Select the context of any qcreate attempt where a user has a grade (even if not manual graded by a teacher), or is the manual grader of a created question.
+        // Select the context of any qcreate attempt where a user has a grade
+        // (even if not manual graded by a teacher), or is the manual grader of a created question.
         $sql = 'SELECT c.id
-                                              FROM {question} q
-                                              LEFT JOIN {user} u ON u.id = q.createdby
-                                              LEFT JOIN {question_categories} qc ON qc.id = q.category
-                                              LEFT JOIN {qcreate_grades} g ON g.questionid = q.id
-                                              LEFT JOIN {context} c ON c.id = qc.contextid
-                                              LEFT JOIN {course_modules} cm ON cm.id = c.instanceid AND c.contextlevel = :contextlevel
-                                              LEFT JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                                              LEFT JOIN {qcreate} a ON a.id = cm.instance
+                FROM {question} q
+                LEFT JOIN {user} u ON u.id = q.createdby
+                LEFT JOIN {question_categories} qc ON qc.id = q.category
+                LEFT JOIN {qcreate_grades} g ON g.questionid = q.id
+                LEFT JOIN {context} c ON c.id = qc.contextid
+                LEFT JOIN {course_modules} cm ON cm.id = c.instanceid AND c.contextlevel = :contextlevel
+                LEFT JOIN {modules} m ON m.id = cm.module AND m.name = :modname
+                LEFT JOIN {qcreate} a ON a.id = cm.instance
             WHERE
                 g.teacher = :qauserid OR
                 q.createdby = :qouserid';
@@ -128,7 +129,7 @@ class provider implements
                 continue;
             }
             $user = $contextlist->get_user();
-            // echo " user in export_user_data $user->id ";
+
             $qcreatedata = helper::get_context_data($context, $user);
             helper::export_context_files($context, $user);
 
@@ -183,8 +184,8 @@ class provider implements
         foreach ($contextlist as $context) {
             $cm = get_coursemodule_from_id('qcreate', $context->instanceid);
             if (!$cm) {
-            // Only qcreate module will be handled.
-            continue;
+                // Only qcreate module will be handled.
+                continue;
             }
             $qcreateobj = new \qcreate($context, null, null);
 
@@ -263,8 +264,6 @@ class provider implements
             'question' => $grade->questiongraded,
             'gradecomment' => $grade->teachercomment,
         ];
-      //  echo " writer ";
-      //  var_dump($gradedata);
         writer::with_context($context)
                 ->export_data(array_merge($currentpath, [get_string('privacy:gradepath', 'mod_qcreate')]), $gradedata);
     }

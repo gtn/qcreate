@@ -198,7 +198,6 @@ class mod_qcreate_privacy_testcase extends provider_testcase {
         // Every module has an intro.
         $this->assertTrue(isset($qcreatedata->intro));
 
-
         // Delete the data and check it is removed.
         $this->setUser();
         provider::delete_data_for_user($approvedcontextlist);
@@ -219,7 +218,7 @@ class mod_qcreate_privacy_testcase extends provider_testcase {
         $this->getDataGenerator()->enrol_user($otheruser->id, $this->course->id, 'student');
 
         $q1 = $this->question;
-        //Create another question.
+        // Create another question.
         $q2 = $this->qcreate_add_qcreate_question($otheruser, $this->qcreate, 'shortanswer');
 
         // Grade question.
@@ -238,7 +237,7 @@ class mod_qcreate_privacy_testcase extends provider_testcase {
         $q3 = $this->qcreate_add_qcreate_question($this->student, $otherqcreate, 'shortanswer');
         $q4 = $this->qcreate_add_qcreate_question($otheruser, $otherqcreate, 'shortanswer');
 
-        // Grade the questions
+        // Grade the questions.
         $this->setUser($this->teacher);
         qcreate_process_local_grade($otherqcreate, $q3, false, false, 50, 'You can do better.');
         qcreate_process_local_grade($otherqcreate, $q4, false, false, 40, 'Poor job.');
@@ -278,7 +277,7 @@ class mod_qcreate_privacy_testcase extends provider_testcase {
         $cm = get_coursemodule_from_instance('qcreate', $this->qcreate->id);
         $context = context_module::instance($cm->id);
 
-        //Create another question.
+        // Create another question.
         $q2 = $this->qcreate_add_qcreate_question($this->teacher, $this->qcreate, 'shortanswer');
 
         $otherteacher = $this->getDataGenerator()->create_user();;
