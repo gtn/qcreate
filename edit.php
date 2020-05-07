@@ -1,39 +1,52 @@
-<?php // $Id: edit.php,v 1.16 2008/11/12 08:23:00 jamiesensei Exp $
-/**
-* Page to grade questions
-*
-*
-* @version $Id: edit.php,v 1.16 2008/11/12 08:23:00 jamiesensei Exp $
-* @author Martin Dougiamas and many others.
-* @license http://www.gnu.org/copyleft/gpl.html GNU Public License
-*/
-require_once("../../config.php");
-require_once($CFG->libdir.'/gradelib.php');
-require_once($CFG->libdir.'/tablelib.php');
-require_once($CFG->dirroot.'/mod/qcreate/lib.php');
-require_once($CFG->dirroot . '/question/editlib.php');
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Page to grade created questions.
+ *
+ * @package    mod_qcreate
+ * @copyright  2008 Jamie Pratt <me@jamiep.org>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ */
+require_once(dirname(__FILE__) . '/../../config.php');
+require_once($CFG->libdir . '/gradelib.php');
+require_once($CFG->libdir . '/tablelib.php');
+require_once($CFG->dirroot . '/mod/qcreate/lib.php');
+require_once($CFG->dirroot . '/question/editlib.php');
 
 list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('questions', '/mod/qcreate/edit.php');
 $qcreate->cmidnumber = $cm->id;
-require_capability('mod/qcreate:grade', get_context_instance(CONTEXT_MODULE, $cm->id));
-if ($qcreate->graderatio == 100){
-    $grading_interface = false;
+require_capability('mod/qcreate:grade', context_module::instance($cm->id));
+if ($qcreate->graderatio == 100) {
+    $gradinginterface = false;
 } else {
-    $grading_interface = true;
-} 
+    $gradinginterface = true;
+}
 
 $page    = optional_param('page', 0, PARAM_INT);
+$gradessubmitted   = optional_param('gradessubmitted', 0, PARAM_BOOL);          // Grades submitted?
 
-$gradessubmitted   = optional_param('gradessubmitted', 0, PARAM_BOOL);          // grades submitted?
-if ($grading_interface){ 
+if ($gradinginterface) {
     $showungraded = optional_param('showungraded', 1, PARAM_BOOL);
     $showgraded = optional_param('showgraded', 1, PARAM_BOOL);
     $showneedsregrade = optional_param('showneedsregrade', 1, PARAM_BOOL);
 } else {
     $showungraded = true;
-    $showgraded =  true;
-    $showneedsregrade =  true;
+    $showgraded = true;
+    $showneedsregrade = true;
 }
 
 
@@ -41,18 +54,21 @@ if ($grading_interface){
 /* first we check to see if the form has just been submitted
  * to request user_preference updates
  */
-if (isset($_POST['updatepref'])){
+$updatepref = optional_param('updatepref', 0, PARAM_INT);
+if ($updatepref) {
     $perpage = optional_param('perpage', 10, PARAM_INT);
-    $perpage = ($perpage <= 0) ? 10 : $perpage ;
+    $perpage = ($perpage <= 0) ? QCREATE_PER_PAGE : $perpage;
+    $perpage = ($perpage > QCREATE_MAX_PER_PAGE) ? QCREATE_MAX_PER_PAGE : $perpage;
     set_user_preference('qcreate_perpage', $perpage);
 }
-/// find out current groups mode
+
+// Find out current groups mode.
 $groupmode = groups_get_activity_groupmode($cm);
 $currentgroup = groups_get_activity_group($cm, true);
 
-/// Get all ppl that are allowed to submit assignments
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
-if (!$users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', $currentgroup, '', false)){
+// Get all ppl that are allowed to submit questions.
+$context = context_module::instance($cm->id);
+if (!$users = get_users_by_capability($context, 'mod/qcreate:submit', '', '', '', '', $currentgroup, '', false)) {
     $users = array();
 }
 
@@ -62,9 +78,9 @@ if (!empty($CFG->enablegroupings) && !empty($cm->groupingid)) {
     $users = array_intersect($users, array_keys($groupingusers));
 
 }
-// grades submitted?
-if ($gradessubmitted){
-    qcreate_process_grades($qcreate, $cm, $users);
+// Grades submitted?
+if ($gradessubmitted) {
+    $message = qcreate_process_grades($qcreate, $cm, $users);
 }
 
 /* next we get perpage params
@@ -72,46 +88,58 @@ if ($gradessubmitted){
  */
 $perpage    = get_user_preferences('qcreate_perpage', 10);
 
-$grading_info = grade_get_grades($COURSE->id, 'mod', 'qcreate', $qcreate->id);
+$gradinginfo = grade_get_grades($COURSE->id, 'mod', 'qcreate', $qcreate->id);
 
-if (!empty($CFG->enableoutcomes) and !empty($grading_info->outcomes)) {
-    $uses_outcomes = true;
+if (!empty($CFG->enableoutcomes) and !empty($gradinginfo->outcomes)) {
+    $usesoutcomes = true;
 } else {
-    $uses_outcomes = false;
+    $usesoutcomes = false;
 }
 
-$teacherattempts = true; /// Temporary measure
-$strsaveallfeedback = get_string('saveallfeedback', 'assignment');
+$teacherattempts = true; // Temporary measure.
+$strsaveallfeedback = get_string('saveallfeedback', 'qcreate');
 
 
-$tabindex = 1; //tabindex for quick grading tabbing; Not working for dropdowns yet
+$tabindex = 1; // Tabindex for quick grading tabbing; Not working for dropdowns yet.
 
-add_to_log($COURSE->id, 'qcreate', 'grade', 'grades.php?id='.$qcreate->id, $qcreate->id, $cm->id);
+// Log this visit.
+$params = array(
+    'courseid' => $COURSE->id,
+    'context' => $context,
+    'other' => array(
+        'qcreateid' => $qcreate->id
+    )
+);
+$event = \mod_qcreate\event\edit_page_viewed::create($params);
+$event->trigger();
+
 $strqcreate = get_string('modulename', 'qcreate');
 $strqcreates = get_string('modulenameplural', 'qcreate');
-$navlinks = array();
-$navlinks[] = array('name' => $strqcreates, 'link' => "index.php?id=$COURSE->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name,true),
-                    'link' => "view.php?id={$cm->id}",
-                    'type' => 'activityinstance');
-$navlinks[] = array('name' => get_string('grading', 'qcreate'), 'link' => '', 'type' => 'title');
-$navigation = build_navigation($navlinks);
 
 $PAGE->set_url($thispageurl);
 
-print_header_simple(format_string($qcreate->name,true), "", $navigation,
-        '', '', true, update_module_button($cm->id, $COURSE->id, $strqcreate), navmenu($COURSE, $cm));
+// Prepare header.
+$title = $COURSE->shortname . ': ' . format_string($qcreate->name);
+$PAGE->set_title($title);
+$PAGE->set_heading($COURSE->fullname);
+$PAGE->set_context($context);
+$PAGE->force_settings_menu();
 
-$mode = 'editq';
-include('tabs.php');
+echo $OUTPUT->header();
+echo $OUTPUT->heading($qcreate->name, 2, null);
 
-//setting this after tabs.php as these params are just for this page and should not be included in urls for tabs.
+// Grades submitted?
+if ($gradessubmitted) {
+    echo $message;
+}
+
 $thispageurl->params(compact('showgraded', 'showneedsregrade', 'showungraded', 'page'));
 
 groups_print_activity_menu($cm, $thispageurl->out());
 
-if ($grading_interface){
-    $tablecolumns = array('picture', 'fullname', 'qname', 'grade', 'status', 'gradecomment', 'timemodified', 'timemarked', 'finalgrade');
+if ($gradinginterface) {
+    $tablecolumns = array('picture', 'fullname', 'qname', 'grade', 'status',
+            'gradecomment', 'timemodified', 'timemarked', 'finalgrade');
     $tableheaders = array('',
                           get_string('fullname'),
                           get_string('question'),
@@ -121,9 +149,9 @@ if ($grading_interface){
                           get_string('lastmodified'),
                           get_string('marked', 'qcreate'),
                           get_string('finalgrade', 'grades'));
-    if ($uses_outcomes) {
-        $tablecolumns[] = 'outcome'; // no sorting based on outcomes column
-        $tableheaders[] = get_string('outcome', 'grades');
+    if ($usesoutcomes) {
+        $tablecolumns[] = 'outcomes'; // No sorting based on outcomes column.
+        $tableheaders[] = get_string('outcomes', 'grades');
     }
 } else {
     $tablecolumns = array('picture', 'fullname', 'qname', 'gradecomment', 'timemodified', 'finalgrade');
@@ -141,9 +169,8 @@ $table->define_columns($tablecolumns);
 $table->define_headers($tableheaders);
 $table->define_baseurl($thispageurl->out());
 
-$table->sortable(true, 'lastname');//sorted by lastname by default
+$table->sortable(true, 'lastname');// Sorted by lastname by default.
 $table->collapsible(true);
-$table->initialbars(true);
 
 $table->column_suppress('picture');
 $table->column_suppress('fullname');
@@ -154,44 +181,42 @@ $table->column_class('question', 'question');
 $table->column_class('gradecomment', 'comment');
 $table->column_class('timemodified', 'timemodified');
 $table->column_class('finalgrade', 'finalgrade');
-if ($grading_interface){ 
+if ($gradinginterface) {
     $table->column_class('grade', 'grade');
     $table->column_class('timemarked', 'timemarked');
     $table->column_class('status', 'status');
-    if ($uses_outcomes) {
-        $table->column_class('outcome', 'outcome');
+    if ($usesoutcomes) {
+        $table->column_class('outcomes', 'outcome');
     }
 }
-$table->set_attribute('cellspacing', '0');
-$table->set_attribute('id', 'attempts');
-$table->set_attribute('class', 'grades');
-$table->set_attribute('width', '90%');
-//$table->set_attribute('align', 'center');
 
-if ($grading_interface){ 
+$table->set_attribute('id', 'student_questions');
+$table->set_attribute('class', 'grades');
+
+if ($gradinginterface) {
     $table->no_sorting('finalgrade');
-    $table->no_sorting('outcome');
+    $table->no_sorting('outcomes');
 }
-// Start working -- this is necessary as soon as the niceties are over
+// Start working -- this is necessary as soon as the niceties are over.
 $table->setup();
 
 
 
-/// Construct the SQL
+// Construct the SQL.
 
 
-if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
+if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)) {
     if ($sort = $table->get_sql_sort()) {
         $sort = ' ORDER BY '.$sort;
     }
 
     $where = $table->get_sql_where();
-	if ($where[0]) {
+    if ($where[0]) {
         $where[0] .= ' AND ';
-	}
-	
-    //unfortunately we cannot use status in WHERE clause
-    switch ($showungraded . $showneedsregrade . $showgraded){
+    }
+
+    // Unfortunately we cannot use status in WHERE clause.
+    switch ($showungraded . $showneedsregrade . $showgraded) {
         case '001':
             $where[0] .= '(g.timemarked IS NOT NULL) AND (g.timemarked >= q.timemodified ) AND ';
             break;
@@ -210,7 +235,7 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
         case '110':
             $where[0] .= '((g.timemarked IS NULL) OR g.timemarked < q.timemodified) AND ';
             break;
-        case '111': //show everything
+        case '111': // Show everything.
             break;
     }
     if ($qcreate->allowed != 'ALL') {
@@ -219,49 +244,56 @@ if (!empty($users) && ($showungraded || $showgraded || $showneedsregrade)){
         $where[0] .= 'q.qtype IN ('.$allowedlist.') AND ';
     }
 
-    $countsql = 'SELECT COUNT(*) FROM '.$CFG->prefix.'user u, '.$CFG->prefix.'question_categories c, '.$CFG->prefix.'question q '.
-           'LEFT JOIN '.$CFG->prefix.'qcreate_grades g ON q.id = g.questionid '.
-           'WHERE '.$where[0].'q.createdby = u.id AND u.id IN ('.implode(',',$users).
+    $countsql = 'SELECT COUNT(*) FROM {user} u, {question_categories} c, {question} q '.
+           'LEFT JOIN {qcreate_grades} g ON q.id = g.questionid '.
+           'WHERE ' . $where[0] . 'q.createdby = u.id AND u.id IN (' . implode(',', $users) .
             ') AND q.hidden=\'0\' AND q.parent=\'0\' AND q.category = c.id and c.contextid='.$context->id;
     $answercount = $DB->count_records_sql($countsql, $where[1]);
 
-    //complicated status calculation is needed for sorting on status column
-    $select = 'SELECT q.id AS qid, u.id, u.firstname, u.lastname, u.picture,
+    $ufields = user_picture::fields('u');
+    // Complicated status calculation is needed for sorting on status column.
+    $select = "SELECT q.id AS qid, $ufields,
                       g.id AS gradeid, g.grade, g.gradecomment,
                       q.timemodified, g.timemarked,
                       q.qtype, q.name AS qname,
                       COALESCE(
                         SIGN(SIGN(g.timemarked) + SIGN(g.timemarked - q.timemodified))
                         ,-1
-                      ) AS status ';
-    $sql = 'FROM '.$CFG->prefix.'user u, '.$CFG->prefix.'question_categories c,  '.$CFG->prefix.'question q '.
-           'LEFT JOIN '.$CFG->prefix.'qcreate_grades g ON q.id = g.questionid
+                      ) AS status ";
+    $sql = 'FROM {user} u, {question_categories} c, {question} q '.
+           'LEFT JOIN {qcreate_grades} g ON q.id = g.questionid
                                                               AND g.qcreateid = '.$qcreate->id.' '.
-           'WHERE '.$where[0].'q.createdby = u.id AND u.id IN ('.implode(',',$users).
+           'WHERE ' . $where[0] . 'q.createdby = u.id AND u.id IN (' . implode(',', $users) .
             ') AND q.hidden=\'0\' AND q.parent=\'0\' AND q.category = c.id and c.contextid='.$context->id;
 } else {
     $answercount = 0;
 }
 
-if ($grading_interface){ 
+$table->initialbars($answercount > 20);
+
+if ($gradinginterface) {
     echo '<form id="showoptions" action="'.$thispageurl->out(true).'" method="post">';
     echo '<div>';
-    // TODO: echo $thispageurl->hidden_params_out(array('showgraded', 'showneedsregrade', 'showungraded'));
-    //default value for checkbox when checkbox not checked.
+
+    // Default value for checkbox when checkbox not checked.
+
     echo '<input type="hidden" name="showgraded" value="0" />';
     echo '<input type="hidden" name="showneedsregrade" value="0" />';
     echo '<input type="hidden" name="showungraded" value="0" />';
     echo '</div>';
     echo '<div class="mdl-align">';
     print_string('show', 'qcreate');
-    $checked =  $showgraded?' checked="checked"':'';
-    echo '<input onchange="getElementById(\'showoptions\').submit(); return true;"  type="checkbox" value="1" name="showgraded" id="id_showgraded"'.$checked.'/>';
+    $checked = $showgraded ? ' checked="checked"' : '';
+    echo '<input onchange="getElementById(\'showoptions\').submit(); return true;"' .
+            ' type="checkbox" value="1" name="showgraded" id="id_showgraded"' . $checked.'/>';
     echo '<label for="id_showgraded">'.get_string('showgraded', 'qcreate').'</label>';
-    $checked =  $showneedsregrade?' checked="checked"':'';
-    echo '<input onchange="getElementById(\'showoptions\').submit(); return true;" type="checkbox" value="1" name="showneedsregrade" id="id_showneedsregrade"'.$checked.'/>';
+    $checked = $showneedsregrade ? ' checked="checked"' : '';
+    echo '&nbsp;<input onchange="getElementById(\'showoptions\').submit(); return true;"' .
+            ' type="checkbox" value="1" name="showneedsregrade" id="id_showneedsregrade"'.$checked.'/>';
     echo '<label for="id_showneedsregrade">'.get_string('showneedsregrade', 'qcreate').'</label>';
-    $checked =  $showungraded?' checked="checked"':'';
-    echo '<input onchange="getElementById(\'showoptions\').submit(); return true;" type="checkbox" value="1" name="showungraded" id="id_showungraded"'.$checked.'/>';
+    $checked = $showungraded ? ' checked="checked"' : '';
+    echo '&nbsp;<input onchange="getElementById(\'showoptions\').submit(); return true;"' .
+            ' type="checkbox" value="1" name="showungraded" id="id_showungraded"'.$checked.'/>';
     echo '<label for="id_showungraded">'.get_string('showungraded', 'qcreate').'</label>';
     echo '<noscript>';
     echo '<input type="submit" name="go" value="'.get_string('go').'" />';
@@ -270,201 +302,244 @@ if ($grading_interface){
 }
 $table->pagesize($perpage, $answercount);
 
-$tableHasData = false;
+$tablehasdata = false;
 
 ob_start();
-if ($answercount && false !== ($answers = $DB->get_records_sql($select.$sql.$sort, $where[1], $table->get_page_start(), $table->get_page_size()))) {
+if ($answercount && false !== ($answers = $DB->get_records_sql(
+        $select.$sql.$sort, $where[1], $table->get_page_start(), $table->get_page_size()
+        ))) {
     $strupdate = get_string('update');
     $strgrade  = get_string('grade');
     $grademenu = make_grades_menu($qcreate->grade);
-    $grading_info = grade_get_grades($COURSE->id, 'mod', 'qcreate', $qcreate->id, $users);
-    
-    $qtypemenu = question_type_menu();
-    
-	foreach ($answers as $answer) {
-        $final_grade = $grading_info->items[0]->grades[$answer->id];
-    /// Calculate user status
+    $gradinginfo = grade_get_grades($COURSE->id, 'mod', 'qcreate', $qcreate->id, $users);
+
+    foreach ($answers as $answer) {
+        $finalgradevalue = $gradinginfo->items[0]->grades[$answer->id];
+        // Calculate user status.
         $answer->needsregrading = ($answer->timemarked <= $answer->timemodified);
-        $picture =  null; // TODO: print_user_picture($answer->id, $COURSE->id, $answer->picture, false, true);
+
+        $answer->imagealt = fullname($answer);
+        $picture = $OUTPUT->user_picture($answer, array('courseid' => $COURSE->id));
 
         if (empty($answer->gradeid)) {
-            $answer->grade = -1; //no grade yet
-        }
-        if ($grading_interface && !$answer->needsregrading && $answer->timemarked!=0){
-            $highlight = true;
-        } else {
-            $highlight = false;
-        }
-        $colquestion = $answer->qname;
-        //preview?
-        $strpreview = get_string("preview","quiz");
-
-        if (question_has_capability_on($answer->qid, 'use')){
-
-			$link = new moodle_url('/question/preview.php?id=' . $answer->qid . '&amp;courseid=' .$COURSE->id);
-			$colquestion .= $OUTPUT->action_link($link, "<img src=\"".$OUTPUT->pix_url('t/preview')."\" class=\"iconsmall\" alt=\"$strpreview\" />", new popup_action ('click', $link));
+            $answer->grade = -1; // No grade yet.
         }
 
-        // edit, hide, delete question, using question capabilities, not quiz capabilieies
+        $a = new stdClass();
+        $a->qname = $answer->qname;
+        $a->user = $answer->imagealt;
+
+        $colquestion = html_writer::span($answer->qname);
+        // Preview?
+        $strpreview = get_string('preview', 'qcreate');
+
+        if (question_has_capability_on($answer->qid, 'use')) {
+
+            $link = new moodle_url('/question/preview.php?id=' . $answer->qid . '&amp;courseid=' .$COURSE->id);
+            $image = $OUTPUT->pix_icon('t/preview', $strpreview);
+            $colquestion .= $OUTPUT->action_link($link, $image,
+                    new popup_action ('click', $link, 'questionpreview', question_preview_popup_params()));
+        }
+
+        // Edit, hide, delete question, using question capabilities, not quiz capabilieies.
         if (question_has_capability_on($answer->qid, 'edit') || question_has_capability_on($answer->qid, 'move')) {
-            $stredit = get_string("edit");
-
-			$link = new moodle_url('/question/question.php?id=' . $answer->qid . '&amp;cmid=' .$cm->id. '&amp;inpopup=1');
-			$colquestion .= $OUTPUT->action_link($link, "<img src=\"".$OUTPUT->pix_url('t/edit')."\" class=\"iconsmall\" alt=\"$stredit\" />", new popup_action ('click', $link));
-        } elseif (question_has_capability_on($answer->qid, 'view')){
-            $strview = get_string("view");
-			$link = new moodle_url('/question/question.php?id=' . $answer->qid . '&amp;cmid=' .$cm->id. '&amp;inpopup=1');
-			$colquestion .= $OUTPUT->action_link($link, "<img src=\"".$OUTPUT->pix_url('t/info')."\" class=\"iconsmall\" alt=\"$strview\" />", new popup_action ('click', $link));
+            $questionparams = array('returnurl' => $thispageurl->out_as_local_url(), 'cmid' => $cm->id, 'id' => $answer->qid);
+            $link = new moodle_url('/question/question.php', $questionparams);
+            $colquestion .= html_writer::link(
+                $link, $OUTPUT->pix_icon('t/edit', get_string('edit'), '', array('class' => 'iconsmall')));
+        } else if (question_has_capability_on($answer->qid, 'view')) {
+            $questionparams = array('returnurl' => $thispageurl->out_as_local_url(), 'cmid' => $cm->id, 'id' => $answer->qid);
+            $link = new moodle_url('/question/question.php', $questionparams);
+            $colquestion .= html_writer::link(
+                $link, $OUTPUT->pix_icon('t/view', get_string('view'), '', array('class' => 'iconsmall')));
         }
 
-        if ($highlight){
-            $colquestion = '<span class="highlight">'.$colquestion.'</span>';
-        }
-        $colquestion .= '<br />('.$qtypemenu[$answer->qtype].')';
+        $colquestion .= '<br />(' . question_bank::get_qtype_name($answer->qtype) . ')';
+        $colquestion = '<div id="qu'.$answer->qid.'">'.$colquestion.'</div>';
         if ($answer->timemodified > 0) {
             $studentmodified = '<div id="ts'.$answer->qid.'">'.userdate($answer->timemodified).'</div>';
         } else {
             $studentmodified = '';
         }
         if (!empty($answer->gradeid)) {
-        ///Prints student answer and student modified date
-        ///attach file or print link to student answer, depending on the type of the assignment.
-        ///Refer to print_student_answer in inherited classes.
+            // Prints student answer and student modified date
+            // Refer to print_student_answer in inherited classes.
 
-        ///Print grade, dropdown or text
+            // Print grade, dropdown or text.
             if ($answer->timemarked > 0) {
                 $teachermodified = '<div id="tt'.$answer->qid.'">'.userdate($answer->timemarked).'</div>';
 
-                if ($final_grade->locked or $final_grade->overridden) {
-                    $grade = '<div id="g'.$answer->qid.'">'.$final_grade->str_grade.'</div>';
+                if ($finalgradevalue->locked or $finalgradevalue->overridden) {
+                    $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
                 } else {
-					$menu = html_writer::select(make_grades_menu($qcreate->grade), 'menu['.$answer->qid.']', $answer->grade, get_string('nograde'));
-                    $grade = '<div id="g'.$answer->qid.'">'. $menu .'</div>';
+                    $attributes = array('tabindex' => $tabindex++);
+                    $menu = html_writer::select($grademenu,
+                            'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')), $attributes);
+                    $grade = '<div id="g'.$answer->qid.'">'
+                            .'<label class="accesshide"
+                            for="menumenu' .$answer->qid . '">'
+                            .get_string('questiongrade', 'qcreate', $a) .
+                            '</label>'. $menu .'</div>';
                 }
 
             } else {
                 $teachermodified = '<div id="tt'.$answer->qid.'">&nbsp;</div>';
-                if ($final_grade->locked or $final_grade->overridden) {
-                    $grade = '<div id="g'.$answer->qid.'">'.$final_grade->str_grade.'</div>';
+                if ($finalgradevalue->locked or $finalgradevalue->overridden) {
+                    $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
                 } else {
-					$menu = html_writer::select(make_grades_menu($qcreate->grade), 'menu['.$answer->qid.']', $answer->grade, get_string('nograde'));
-                    $grade = '<div id="g'.$answer->qid.'">'.$menu.'</div>';
+                    $attributes = array('tabindex' => $tabindex++);
+                    $menu = html_writer::select($grademenu,
+                            'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')), $attributes);
+                    $grade = '<div id="g'.$answer->qid.'">'
+                            .'<label class="accesshide"
+                            for="menumenu' .$answer->qid . '">'
+                            .get_string('questiongrade', 'qcreate', $a) .
+                            '</label>'.$menu.'</div>';
                 }
             }
-        ///Print Comment
-            if ($final_grade->locked or $final_grade->overridden) {
-                $comment = '<div id="com'.$answer->qid.'">'.shorten_text(strip_tags($final_grade->str_feedback),15).'</div>';
+            // Print Comment.
+            if ($finalgradevalue->locked or $finalgradevalue->overridden) {
+                $comment = '<div id="com'.$answer->qid.'">'.shorten_text(strip_tags($finalgradevalue->str_feedback), 15).'</div>';
 
             } else {
                 $comment = '<div id="com'.$answer->qid.'">'
-                         . '<textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
-                         . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
+                        .'<label class="accesshide"
+                        for="gradecomment' . $answer->qid.'">'
+                        . get_string('gradecomment', 'qcreate', $a)
+                        .'</label><textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
+                        . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
             }
         } else {
             $teachermodified = '<div id="tt'.$answer->qid.'">&nbsp;</div>';
-            $status          = '<div id="st'.$answer->qid.'">&nbsp;</div>';
+            $status = '&nbsp;';
 
-            if ($final_grade->locked or $final_grade->overridden) {
-                $grade = '<div id="g'.$answer->qid.'">'.$final_grade->str_grade.'</div>';
-            } else {   // allow editing
-				$menu = html_writer::select(make_grades_menu($qcreate->grade), 'menu['.$answer->qid.']', $answer->grade, get_string('nograde'));
-                $grade = '<div id="g'.$answer->qid.'">'.$menu.'</div>';
+            if ($finalgradevalue->locked or $finalgradevalue->overridden) {
+                $grade = '<div id="g'.$answer->qid.'">'.$finalgradevalue->str_grade.'</div>';
+            } else {   // Allow editing.
+                $attributes = array('tabindex' => $tabindex++);
+                $menu = html_writer::select($grademenu,
+                       'menu['.$answer->qid.']', $answer->grade, array('-1' => get_string('nograde')), $attributes);
+                $grade = '<div id="g'.$answer->qid.'">'
+                        .'<label class="accesshide"
+                        for="menumenu' .$answer->qid . '">'
+                        .get_string('questiongrade', 'qcreate', $a) .
+                        '</label>'.$menu.'</div>';
             }
 
-            if ($final_grade->locked or $final_grade->overridden) {
-                $comment = '<div id="com'.$answer->qid.'">'.$final_grade->str_feedback.'</div>';
+            if ($finalgradevalue->locked or $finalgradevalue->overridden) {
+                $comment = '<div id="com'.$answer->qid.'">'.$finalgradevalue->str_feedback.'</div>';
             } else {
                 $comment = '<div id="com'.$answer->qid.'">'
-                         . '<textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
+                        .'<label class="accesshide"
+                        for="gradecomment' . $answer->qid.'">'
+                        .get_string('gradecomment', 'qcreate', $a)
+                        .'</label><textarea tabindex="'.$tabindex++.'" name="gradecomment['.$answer->qid.']" id="gradecomment'
                          . $answer->qid.'" rows="4" cols="30">'.($answer->gradecomment).'</textarea></div>';
             }
         }
 
-        if ($answer->timemarked==0){
+        if ($answer->timemarked == 0) {
             $status = get_string('needsgrading', 'qcreate');
-        } else if ($answer->needsregrading){
+            $class = "label label-warning";
+        } else if ($answer->needsregrading) {
             $status = get_string('needsregrading', 'qcreate');
+            $class = "label label-warning";
         } else {
             $status = get_string('graded', 'qcreate');
+            $class = "label label-success";
         }
-        if ($highlight){
-            $status = '<span class="highlight">'.$status.'</span>';
-        }
+        $attributes = array('tabindex' => -1);
+        $status = html_writer::span($status, $class, $attributes);
+        $status = '<div id="st'.$answer->qid.'">'.$status.'</div>';
 
-        $finalgrade = '<span id="finalgrade_'.$answer->qid.'">'.$final_grade->str_grade.'</span>';
+        $finalgradestr = '<label class="accesshide"
+                        for="finalgrade_' . $answer->qid.'">'
+                        .get_string('finalgrade', 'qcreate', $answer->imagealt)
+                        .'</label><span id="finalgrade_'.$answer->qid.'">'.$finalgradevalue->str_grade.'</span>';
 
         $outcomes = '';
 
-        if ($uses_outcomes) {
-
-            foreach($grading_info->outcomes as $n=>$outcome) {
-                $outcomes .= '<div class="outcome"><label>'.$outcome->name.'</label>';
+        if ($usesoutcomes) {
+            foreach ($gradinginfo->outcomes as $index => $outcome) {
+                $outcomes .= html_writer::start_tag('div', array('class' => 'outcome')). html_writer::tag('label', $outcome->name );
                 $options = make_grades_menu(-$outcome->scaleid);
 
                 if ($outcome->grades[$answer->id]->locked) {
                     $options[0] = get_string('nooutcome', 'grades');
-                    $outcomes .= ': <span id="outcome_'.$n.'_'.$answer->qid.'">'.$options[$outcome->grades[$answer->qid]->grade].'</span>';
+                    $outcomes .= ': ' . html_writer::tag('span', $options[$outcome->grades[$answer->qid]->grade],
+                            array(id => "outcome_'.$index.'_'.$answer->qid.'"));
                 } else {
                     $outcomes .= ' ';
-					$outcomes .= html_writer::select($options, 'outcome_'.$n.'['.$answer->qid.']',
-								$outcome->grades[$answer->qid]->grade, get_string('nooutcome', 'grades'), array('id'=>'outcome_'.$n.'_'.$answer->qid));
+                    $outcomes .= html_writer::select($options, 'outcome_'.$index.'['.$answer->qid.']',
+                                $outcome->grades[$answer->qid]->grade, get_string('nooutcome', 'grades'),
+                                        array('id' => 'outcome_'.$index.'_'.$answer->qid));
                 }
-                $outcomes .= '</div>';
+                $outcomes .= html_writer::end_tag('div');
             }
         }
 
-        if ($grading_interface){ 
-            $row = array($picture, fullname($answer), $colquestion, $grade, $status, $comment, $studentmodified, $teachermodified, $finalgrade);
+        if ($gradinginterface) {
+            $row = array($picture, $answer->imagealt, $colquestion, $grade, $status, $comment, $studentmodified,
+                    $teachermodified, $finalgradestr);
         } else {
-            $row = array($picture, fullname($answer), $colquestion, $comment, $studentmodified, $finalgrade);
+            $row = array($picture, $answer->imagealt, $colquestion, $comment, $studentmodified, $finalgradestr);
         }
-        if ($uses_outcomes) {
+        if ($usesoutcomes) {
             $row[] = $outcomes;
         }
 
         $table->add_data($row);
-		$tableHasData = true;
+        $tablehasdata = true;
     }
 }
 
-$table->print_html();  /// Print the whole table
-$tableOutput = ob_get_clean();
+$table->finish_html();  // Print the whole table.
+$tableoutput = ob_get_clean();
 
-if ($tableHasData) {
+if ($tablehasdata) {
     echo '<form action="'.$thispageurl->out(true).'" method="post">';
     echo '<div>';
     echo '<input type="hidden" name="gradessubmitted" value="1" />';
-	// TODO: echo $thispageurl->hidden_params_out();
     echo '</div>';
 }
 
-echo $tableOutput;
+echo $tableoutput;
 
-if ($tableHasData) {
-    if ($grading_interface){
-        echo '<div style="text-align:center"><input type="submit" name="fastg" value="'.get_string('saveallfeedbackandgrades', 'qcreate').'" /></div>';
+if ($tablehasdata) {
+    if ($gradinginterface) {
+        echo '<div style="text-align:center"><input type="submit" class="btn btn-primary" name="fastg" value="' .
+                get_string('saveallfeedbackandgrades', 'qcreate').'" /></div>';
     } else {
-        echo '<div style="text-align:center"><input type="submit" name="fastg" value="'.get_string('saveallfeedback', 'qcreate').'" /></div>';
+        echo '<div style="text-align:center"><input type="submit" class="btn btn-primary" name="fastg" value="' .
+                get_string('saveallfeedback', 'qcreate').'" /></div>';
     }
     echo '</form>';
-    /// End of fast grading form
+    // End of fast grading form.
 }
 
-/// Mini form for setting user preference
+// Mini form for setting user preference.
 echo "\n<br />";
 
 $form = '<form id="options" action="'.$thispageurl->out(true).'" method="post">';
-$form .=  '<fieldset class="invisiblefieldset">';
-// TODO: $form .= $thispageurl->hidden_params_out();
+$form .= '<fieldset class="invisiblefieldset">';
 $form .= '<input type="hidden" id="updatepref" name="updatepref" value="1" />';
 $form .= '<p>';
-$form .= '<label for="id_perpage">'.get_string('pagesize','qcreate').'</label>';
+$form .= '<label for="id_perpage">'.get_string('pagesize', 'qcreate').'</label>';
 $form .= '<input type="text" id="id_perpage" name="perpage" size="1" value="'.$perpage.'" /><br />';
 $form .= '<input type="submit" value="'.get_string('savepreferences').'" />';
 $form .= '</p>';
 $form .= '</fieldset>';
 $form .= '</form>';
-$OUTPUT->box($form, 'generalbox boxaligncenter boxwidthnarrow');
-///End of mini form
+echo $OUTPUT->box($form, 'generalbox boxaligncenter boxwidthnarrow');
+// End of mini form.
+
+// Link to the export good page.
+echo '<center>';
+echo $OUTPUT->container_start('exportgoodlink');
+$urlparams = array('cmid' => $cm->id);
+$url = new moodle_url('/mod/qcreate/exportgood.php', $urlparams);
+echo '<a href="' . $url . '" class="btn btn-secondary">' . get_string('exportgood', 'mod_qcreate') . '</a> ';
+echo $OUTPUT->container_end();
+echo '</center>';
 
 echo $OUTPUT->footer();

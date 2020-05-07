@@ -15,17 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Code fragment to define the version of the qcreate module
+ * Search area for mod_qcreate activities.
  *
  * @package    mod_qcreate
- * @copyright  2008 Jamie Pratt <me@jamiep.org>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @copyright  2015 David Monllao {@link http://www.davidmonllao.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace mod_qcreate\search;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2018051500;
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release  = "2.2 for Moodle 2.9 ... 3.5";
-$plugin->requires = 2015050500;
-$plugin->component = 'mod_qcreate';
+/**
+ * Search area for mod_qcreate activities.
+ *
+ * @package    mod_qcreate
+ * @copyright  2015 David Monllao {@link http://www.davidmonllao.com}
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class activity extends \core_search\base_activity {
+
+    /**
+     * Returns true if this area uses file indexing.
+     *
+     * @return bool
+     */
+    public function uses_file_indexing() {
+        return true;
+    }
+}

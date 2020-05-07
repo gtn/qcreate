@@ -15,17 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Code fragment to define the version of the qcreate module
+ * The mod_qcreate instance list viewed event.
  *
  * @package    mod_qcreate
- * @copyright  2008 Jamie Pratt <me@jamiep.org>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @copyright  2014 Jean-Michel Vedrine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace mod_qcreate\event;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2018051500;
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release  = "2.2 for Moodle 2.9 ... 3.5";
-$plugin->requires = 2015050500;
-$plugin->component = 'mod_qcreate';
+/**
+ * The mod_qcreate instance list viewed event class.
+ *
+ * @package    mod_qcreate
+ * @since      Moodle 2.7
+ * @copyright  2014 Jean-Michel Vedrine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class course_module_instance_list_viewed extends \core\event\course_module_instance_list_viewed {
+    // No code required here as the parent class handles it all.
+}

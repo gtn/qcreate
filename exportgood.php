@@ -1,197 +1,122 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * Export questions in the given category and which have been assigned a grade
  * above a certain level.
  *
- * @author Martin Dougiamas, Howard Miller, Jamie Pratt and many others.
- *         {@link http://moodle.org}
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
+ * @package    mod_qcreate
+ * @copyright  2008 Jamie Pratt <me@jamiep.org>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
  */
 
-require_once("../../config.php");
-require_once($CFG->dirroot."/question/editlib.php");
-require_once("export_good_questions_form.php");
+require_once(dirname(__FILE__) . '/../../config.php');
+require_once($CFG->dirroot . '/question/editlib.php');
+require_once($CFG->dirroot . '/mod/qcreate/export_good_questions_form.php');
 
-list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars) = question_edit_setup('export', true);
+list($thispageurl, $contexts, $cmid, $cm, $qcreate, $pagevars)
+        = question_edit_setup('export', '/mod/qcreate/exportgood.php', true);
+$qcreate->cmidnumber = $cm->id;
 
-if (!has_capability('moodle/question:viewmine', $contexts->lowest()) && !has_capability('moodle/question:viewall', $contexts->lowest())) {
-	$capabilityname = get_capability_string('moodle/question:viewmine');
-	print_error('nopermissions', '', '', $capabilityname);
+if (!has_capability('moodle/question:viewmine', $contexts->lowest())
+        && !has_capability('moodle/question:viewall', $contexts->lowest())) {
+    $capabilityname = get_capability_string('moodle/question:viewmine');
+    print_error('nopermissions', '', '', $capabilityname);
 }
 
-// get display strings
-$txt = new object;
-$txt->category = get_string('category', 'quiz');
-$txt->download = get_string('download', 'quiz');
-$txt->downloadextra = get_string('downloadextra', 'quiz');
-$txt->exporterror = get_string('exporterror', 'quiz');
-$txt->exportname = get_string('exportname', 'quiz');
-$txt->exportquestions = get_string('exportquestions', 'quiz');
-$txt->fileformat = get_string('fileformat', 'quiz');
-$txt->exportcategory = get_string('exportcategory', 'quiz');
-$txt->modulename = get_string('modulename', 'quiz');
-$txt->modulenameplural = get_string('modulenameplural', 'quiz');
-$txt->tofile = get_string('tofile', 'quiz');
-
-
-
-// make sure we are using the user's most recent category choice
+// Make sure we are using the user's most recent category choice.
 if (empty($categoryid)) {
-	$categoryid = $pagevars['cat'];
+    $categoryid = $pagevars['cat'];
 }
 
-// ensure the files area exists for this course
-make_upload_directory("$COURSE->id");
 list($catid, $catcontext) = explode(',', $pagevars['cat']);
-if (!$category = $DB->get_record("question_categories", array("id"=>$catid, 'contextid'=>$catcontext))) {
-	print_error('nocategory','quiz');
+if (!$category = $DB->get_record("question_categories", array("id" => $catid, 'contextid' => $catcontext))) {
+    print_error('nocategory', 'quiz');
 }
 
-/// Header
-$strupdatemodule = has_capability('moodle/course:manageactivities', $contexts->lowest())
-	? update_module_button($cm->id, $COURSE->id, get_string('modulename', $cm->modname))
-	: "";
-$navlinks = array();
-$navlinks[] = array('name' => get_string('modulenameplural', $cm->modname), 'link' => "$CFG->wwwroot/mod/{$cm->modname}/index.php?id=$COURSE->id", 'type' => 'activity');
-$navlinks[] = array('name' => format_string($qcreate->name), 'link' => "$CFG->wwwroot/mod/{$cm->modname}/view.php?id={$cm->id}", 'type' => 'title');
-$navlinks[] = array('name' => $txt->exportquestions, 'link' => '', 'type' => 'title');
-$navigation = build_navigation($navlinks);
-print_header_simple($txt->exportquestions, '', $navigation, "", "", true, $strupdatemodule);
+// Header.
+$PAGE->set_url($thispageurl);
+$PAGE->set_title(get_string('exportquestions', 'qcreate'));
+$PAGE->set_heading($COURSE->fullname);
+echo $OUTPUT->header();
 
-$currenttab = 'edit';
-$mode = 'exportgood';
-include($CFG->dirroot."/mod/$cm->modname/tabs.php");
+$exportfilename = question_default_export_filename($COURSE, $category);
+$exportform = new qcreate_export_good_questions_form($thispageurl,
+        array('contexts' => array($contexts->lowest()), 'defaultcategory' => $pagevars['cat'],
+                                'defaultfilename' => $exportfilename, 'qcreate' => $qcreate));
 
-$exportfilename = default_export_filename($COURSE, $category);
-$export_form = new question_export__good_questions_form($thispageurl, array('contexts'=>array($contexts->lowest()), 'defaultcategory'=>$pagevars['cat'],
-								'defaultfilename'=>$exportfilename, 'qcreate'=>$qcreate));
+if ($fromform = $exportform->get_data()) {   // Filename.
+    $thiscontext = $contexts->lowest();
 
+    if (! is_readable($CFG->dirroot."/question/format/$fromform->format/format.php")) {
+        print_error('unknowformat', '', '', $fromform->format);;
+    }
+    $withcategories = 'nocategories';
+    if (!empty($fromform->cattofile)) {
+        $withcategories = 'withcategories';
+    }
+    $withcontexts = 'nocontexts';
+    if (!empty($fromform->contexttofile)) {
+        $withcontexts = 'withcontexts';
+    }
+    $betterthangrade = '0';
+    if ($qcreate->graderatio != 100 && !empty($fromform->betterthangrade)) {
+        $betterthangrade = $fromform->betterthangrade;
+    }
+    $naming = '';
+    if (isset($fromform->naming['other'])&& !empty($fromform->naming['othertext'])) {
+        $naming .= '1/' . $fromform->naming['othertext'] . '/';
+    } else {
+        $naming .= '0/none/';
+    }
+    $naming .= isset($fromform->naming['firstname']) ? '1/' : '0/';
+    $naming .= isset($fromform->naming['lastname']) ? '1/' : '0/';
+    $naming .= isset($fromform->naming['username']) ? '1/' : '0/';
+    $naming .= isset($fromform->naming['activityname']) ? '1/' : '0/';
+    $naming .= isset($fromform->naming['timecreated']) ? '1' : '0';
+    // Load parent class for import/export.
+    require_once($CFG->dirroot . '/question/format.php');
 
-if ($from_form = $export_form->get_data()) {   /// Filename
+    // And then the class for the selected format.
+    require_once($CFG->dirroot . "/question/format/$fromform->format/format.php");
 
+    $classname = "qformat_$fromform->format";
+    $qformat = new $classname();
 
-	if (! is_readable($CFG->dirroot."/question/format/$from_form->format/format.php")) {
-		error("Format not known ($from_form->format)");
-	}
+    $filename = question_default_export_filename($COURSE, $category) .
+            $qformat->export_file_extension();
+    $urlbase = "$CFG->httpswwwroot/pluginfile.php";
+    $exporturl = moodle_url::make_file_url($urlbase,
+            "/{$thiscontext->id}/mod_qcreate/export/{$categoryid}/{$fromform->format}/{$withcategories}" .
+            "/{$withcontexts}/{$betterthangrade}/{$naming}/{$filename}", true);
 
-	// load parent class for import/export
-	require_once($CFG->dirroot."/question/format.php");
+    echo $OUTPUT->box_start();
+    echo get_string('yourfileshoulddownload', 'question', $exporturl->out());
+    echo $OUTPUT->box_end();
 
-	// and then the class for the selected format
-	require_once($CFG->dirroot."/question/format/$from_form->format/format.php");
+    $PAGE->requires->js_function_call('document.location.replace', array($exporturl->out(false)), false, 1);
 
-	$classname = "qformat_$from_form->format";
-	$qformat = new $classname();
-	$qformat->setContexts($contexts->having_one_edit_tab_cap('export'));
-
-	$questions = get_questions_category($category, true );
-	if ($qcreate->graderatio != 100 && $from_form->betterthangrade != 0){
-		//filter questions by grade
-		$qkeys = array();
-		foreach ($questions as $question){
-			$qkeys[] = $question->id;
-		}
-		$questionlist = join($qkeys, ',');
-		$sql = 'SELECT questionid, grade FROM '.$CFG->prefix.'qcreate_grades '.
-								'WHERE questionid IN ('.$questionlist.') AND grade >= '.$from_form->betterthangrade;
-		if ($goodquestions = get_records_sql($sql)){
-			foreach($questions as $zbkey => $question){
-				if (!array_key_exists($question->id, $goodquestions)){
-					unset($questions[$zbkey]);
-				}
-			}
-		} else {
-			$a = new object();
-			$a->betterthan = $from_form->betterthangrade;
-			$a->categoryname = $category->name;
-			notice(get_string('noquestionsabove', 'qcreate', $a));
-		}
-	}
-	
-	if (isset($from_form->naming)){
-		if (isset($from_form->naming['firstname'])||
-			isset($from_form->naming['lastname'])||
-			isset($from_form->naming['username'])){
-			$useridkeys = array();
-			foreach ($questions as $question){
-				$useridkeys[] = $question->createdby;
-			}
-			$useridlist = join($useridkeys, ',');
-			if (!$users = get_records_select('user', "id IN ($useridlist)")){
-				$users = array();
-			}
-		}
-		foreach ($questions as $question){
-			$prefixes = array();
-			if (isset($from_form->naming['other'])&& !empty($from_form->naming['othertext'])){
-				$prefixes[] = $from_form->naming['othertext'];
-			}
-			if (isset($from_form->naming['firstname'])){
-				$prefixes[] = isset($users[$question->createdby])?$users[$question->createdby]->firstname:'';
-			}
-			if (isset($from_form->naming['lastname'])){
-				$prefixes[] = isset($users[$question->createdby])?$users[$question->createdby]->lastname:'';
-			}
-			if (isset($from_form->naming['username'])){
-				$prefixes[] = isset($users[$question->createdby])?$users[$question->createdby]->username:'';
-			}
-			if (isset($from_form->naming['activityname'])){
-				$prefixes[] = $qcreate->name;
-			}
-			if (isset($from_form->naming['timecreated'])){
-				$prefixes[] = userdate($question->timecreated, get_string('strftimedatetimeshort'));
-			}
-			$prefixes[] = $question->name;
-			$question->name = join($prefixes, '-');
-		}
-	}
-
-	
-	$qformat->setQuestions($questions);
-
-	$qformat->setCourse($COURSE);
-
-	if (empty($from_form->exportfilename)) {
-		$from_form->exportfilename = default_export_filename($COURSE, $category);
-	}
-	$qformat->setFilename($from_form->exportfilename);
-	$qformat->setCattofile(!empty($from_form->cattofile));
-	$qformat->setContexttofile(!empty($from_form->contexttofile));
-
-	if (! $qformat->exportpreprocess()) {   // Do anything before that we need to
-		error($txt->exporterror, $thispageurl->out());
-	}
-
-	if (! $qformat->exportprocess()) {         // Process the export data
-		error($txt->exporterror, $thispageurl->out());
-	}
-
-	if (! $qformat->exportpostprocess()) {                    // In case anything needs to be done after
-		error($txt->exporterror, $thispageurl->out());
-	}
-	echo "<hr />";
-
-	// link to download the finished file
-	$file_ext = $qformat->export_file_extension();
-	if ($CFG->slasharguments) {
-	  $efile = "{$CFG->wwwroot}/file.php/".$qformat->question_get_export_dir()."/$from_form->exportfilename".$file_ext."?forcedownload=1";
-	}
-	else {
-	  $efile = "{$CFG->wwwroot}/file.php?file=/".$qformat->question_get_export_dir()."/$from_form->exportfilename".$file_ext."&forcedownload=1";
-	}
-	echo "<p><div class=\"boxaligncenter\"><a href=\"$efile\">$txt->download</a></div></p>";
-	echo "<p><div class=\"boxaligncenter\"><font size=\"-1\">$txt->downloadextra</font></div></p>";
-
-	print_continue($thispageurl->out());
-	echo $OUTPUT->footer();
-	exit;
+    echo $OUTPUT->continue_button(new moodle_url('edit.php', $thispageurl->params()));
+    echo $OUTPUT->footer();
+    exit;
 }
 
-/// Display export form
+// Display export form.
+echo $OUTPUT->heading_with_help(get_string('exportquestions', 'qcreate'), 'exportquestions', 'question');
 
-
-print_heading_with_help($txt->exportquestions, 'export', 'quiz');
-
-$export_form->display();
+$exportform->display();
 
 echo $OUTPUT->footer();

@@ -15,17 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Code fragment to define the version of the qcreate module
+ * Definition of Question creation scheduled tasks.
  *
- * @package    mod_qcreate
- * @copyright  2008 Jamie Pratt <me@jamiep.org>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @package mod_qcreate
+ * @category task
+ * @copyright 2014 Jean-Michel Vedrine
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2018051500;
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release  = "2.2 for Moodle 2.9 ... 3.5";
-$plugin->requires = 2015050500;
-$plugin->component = 'mod_qcreate';
+$tasks = array(
+ array(
+ 'classname' => 'mod_qcreate\task\update_grades',
+ 'blocking' => 0,
+ 'minute' => '*/5',
+ 'hour' => '*',
+ 'day' => '*',
+ 'month' => '*',
+ 'dayofweek' => '*'
+ ),
+ array(
+ 'classname' => 'mod_qcreate\task\synchronize_qaccess',
+ 'blocking' => 0,
+ 'minute' => '*/3',
+ 'hour' => '*',
+ 'day' => '*',
+ 'month' => '*',
+ 'dayofweek' => '*'
+ )
+);

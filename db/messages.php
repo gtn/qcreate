@@ -15,17 +15,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Code fragment to define the version of the qcreate module
+ * Defines message providers (types of message sent) for the qcreate module.
  *
- * @package    mod_qcreate
- * @copyright  2008 Jamie Pratt <me@jamiep.org>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @package   mod_qcreate
+ * @copyright 2014 Jean-Michel Vedrine
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2018051500;
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release  = "2.2 for Moodle 2.9 ... 3.5";
-$plugin->requires = 2015050500;
-$plugin->component = 'mod_qcreate';
+$messageproviders = array(
+    // Notify teacher that a student has created a question.
+    'gradernotification' => array(
+        'capability' => 'mod/qcreate:receivegradernotifications'
+    ),
+
+    // Notify student that a question was graded.
+    'studentnotification' => array(
+        'capability' => 'mod/qcreate:receivestudentnotifications'
+    ),
+);
